@@ -1,0 +1,20 @@
+// MongoDB Playground
+// To disable this template go to Settings | MongoDB | Use Default Template For Playground.
+// Make sure you are connected to enable completions and to be able to run a playground.
+// Use Ctrl+Space inside a snippet or a string literal to trigger completions.
+
+
+// Insert a few documents into the sales collection.
+db.products.values.insertOne( 
+  {
+"dolarBlue": 380,
+  "dolarOficial": 210,
+  "packaginPremium": 500,
+  "packagingSimple": 20,
+  "costoGeneral": 500,
+  "flete": 10,
+  "profit": 1.5,
+  }
+  
+ )
+     
