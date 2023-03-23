@@ -1,4 +1,5 @@
 const server = require("./src/app");
 require("./src/controllers/MongoConnect");
+const { PORT } = require("./src/config");
 
-server.listen(3001, () => console.log("server in port 3001"));
+server.listen(PORT, () => console.log(`server in port ${PORT}`));

@@ -1,9 +1,8 @@
 const mongoose = require("mongoose");
-const MONGUS_URI =
-  "mongodb+srv://DavidHartel:IPHONECASEOBERA@cluster0.ri8pwk1.mongodb.net/products?retryWrites=true&w=majority";
+const { MONGODB_URI } = require("../config");
 
 mongoose
-  .connect(MONGUS_URI, {
+  .connect(MONGODB_URI, {
     useUnifiedTopology: true,
     useNewUrlParser: true,
   })
