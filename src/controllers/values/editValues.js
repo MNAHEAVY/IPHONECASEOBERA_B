@@ -1,4 +1,4 @@
-const Values = require("../../models/Values");
+const Values = require("../../models/values");
 
 const updateValues = async (req, res) => {
   const { id } = req.params;
