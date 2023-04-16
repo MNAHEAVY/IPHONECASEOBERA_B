@@ -3,22 +3,54 @@ const mercadopago = require("mercadopago");
 // Agrega credenciales
 mercadopago.configure({
   access_token:
-    "TEST-8199423536684393-040508-2d50dbf655cb0414dba15efedce6419e-190374808",
+    "APP_USR-7181501143783555-040200-10d1bd2aae8c6d893fff84424e60a87b-170650346",
 });
 
 const createPreference = async (req, res) => {
   const { items } = req.body;
 
+  let itemsMp = [];
+  for (let item of items) {
+    let itemObj = {
+      id: item._id,
+      name: item.nombre,
+      quantity: item.quantity.toString(),
+    };
+
+    itemsMp.push(itemObj);
+  }
+
+  let total_value = 0;
+  for (let itemV of items) {
+    total_value = total_value + itemV.precio[0] * itemV.quantity;
+  }
+
   const preferenceData = {
     items: [
       {
-        title: items.title,
-        description: items.description,
+        title: "Mis productos",
         quantity: 1,
-        currency_id: "ARS",
-        unit_price: 200,
+        unit_price: total_value * 400,
       },
     ],
+    payer: {
+      name: "Juan",
+      surname: "Lopez",
+      email: "user@email.com",
+      phone: {
+        area_code: "11",
+        number: 4444 - 4444,
+      },
+      identification: {
+        type: "DNI",
+        number: "12345678",
+      },
+      address: {
+        street_name: "Street",
+        street_number: 123,
+        zip_code: "5700",
+      },
+    },
     back_urls: {
       success: "http://localhost:5173/feedback",
       failure: "http://localhost:5173/feedback",
@@ -26,8 +58,13 @@ const createPreference = async (req, res) => {
     },
     auto_return: "approved",
     notification_url: "http://localhost:3001/webhooks",
-    external_reference: "REFERENCE_ID_HERE",
-    purpose: "wallet_purchase",
+    payment_methods: {},
+    notification_url: "http://localhost:5173/payment",
+    statement_descriptor: "IPHONECASEOBERA",
+    external_reference: "plata que entra",
+    expires: true,
+
+    binary_mode: true,
   };
 
   mercadopago.preferences
