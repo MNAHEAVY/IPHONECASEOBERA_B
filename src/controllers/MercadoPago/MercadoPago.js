@@ -22,7 +22,7 @@ const createPreference = async (req, res) => {
 
   let total_value = 0;
   for (let itemV of items) {
-    total_value = total_value + itemV.precio[0] * itemV.quantity;
+    total_value = total_value + itemV.precio * itemV.quantity;
   }
 
   const preferenceData = {
@@ -30,7 +30,7 @@ const createPreference = async (req, res) => {
       {
         title: "Mis productos",
         quantity: 1,
-        unit_price: total_value * 400,
+        unit_price: total_value,
       },
     ],
     payer: {
