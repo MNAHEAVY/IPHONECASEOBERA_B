@@ -1,15 +1,19 @@
+/* global use, db */
 // MongoDB Playground
-// To disable this template go to Settings | MongoDB | Use Default Template For Playground.
-// Make sure you are connected to enable completions and to be able to run a playground.
 // Use Ctrl+Space inside a snippet or a string literal to trigger completions.
-// Insert a few documents into the sales collection.
 
 const database = "products";
 const collection = "products";
 
 // The current database to use.
 use(database);
-db.products.insertMany([
+
+// Create a new collection.
+db.createCollection(collection);
+
+// The prototype form to create a collection:
+db.createCollection(
+  collection,
   {
     categorias: "iPhone",
     subCategoria: "iPhone",
@@ -288,5 +292,8 @@ db.products.insertMany([
           "https://res.cloudinary.com/deqxuoyrc/image/upload/v1677156314/IPHONECASEOBERA/magsafe_case_knxkx2.png",
       },
     ],
-  },
-]);
+  }
+);
+
+// More information on the `createCollection` command can be found at:
+// https://www.mongodb.com/docs/manual/reference/method/db.createCollection/

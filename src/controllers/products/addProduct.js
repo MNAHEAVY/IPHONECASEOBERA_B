@@ -2,36 +2,38 @@ const Products = require("../../models/products");
 
 const createProduct = async (req, res) => {
   const {
-    linea,
     categorias,
+    subCategoria,
     nombre,
-    color,
-    precio,
-    imagen,
-    modelo,
-    stock,
-    pickColor,
+    marca,
     descripcion,
-    almacenamiento,
+    imagenGeneral,
+    stockGeneral,
     estado,
+    precioBase,
     disponible,
+    tipo,
+    color,
+    almacenamiento,
+    modelo,
   } = req.body;
 
   try {
     const newProduct = new Products({
-      linea,
       categorias,
+      subCategoria,
       nombre,
-      color,
-      precio,
-      imagen,
-      modelo,
-      stock,
-      pickColor,
+      marca,
       descripcion,
-      almacenamiento,
+      imagenGeneral,
+      stockGeneral,
       estado,
+      precioBase,
       disponible,
+      tipo,
+      color,
+      almacenamiento,
+      modelo,
     });
     const savedProduct = await newProduct.save();
     return res.status(201).json(savedProduct);

@@ -3,38 +3,40 @@ const Products = require("../../models/products");
 const updateProduct = async (req, res) => {
   const { id } = req.params;
   const {
-    linea,
     categorias,
+    subCategoria,
     nombre,
-    color,
-    precio,
-    imagen,
-    modelo,
-    stock,
-    pickColor,
+    marca,
     descripcion,
-    almacenamiento,
+    imagenGeneral,
+    stockGeneral,
     estado,
+    precioBase,
     disponible,
+    tipo,
+    color,
+    almacenamiento,
+    modelo,
   } = req.body;
 
   try {
     const updatedProduct = await Products.findByIdAndUpdate(
       id,
       {
-        linea,
         categorias,
+        subCategoria,
         nombre,
-        color,
-        precio,
-        imagen,
-        modelo,
-        stock,
-        pickColor,
+        marca,
         descripcion,
-        almacenamiento,
+        imagenGeneral,
+        stockGeneral,
         estado,
+        precioBase,
         disponible,
+        tipo,
+        color,
+        almacenamiento,
+        modelo,
       },
       { new: true }
     );

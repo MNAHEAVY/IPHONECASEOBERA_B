@@ -1,16 +1,36 @@
 const mongoose = require("mongoose");
 const { Schema, model } = require("mongoose");
 
+const colorSchema = new Schema({
+  nombre: String,
+  imageColor: String,
+  stockColor: Number,
+  estado: String,
+});
+
+const almacenamientoSchema = new Schema({
+  capacidad: String,
+  precio: Number,
+  stockStorage: Number,
+  disponible: Boolean,
+  estado: String,
+});
+const modeloSchema = new Schema({
+  nombre: String,
+  precio: Number,
+  stockModel: Number,
+  disponible: Boolean,
+  imageModel: String,
+});
+
 const productsSchema = new mongoose.Schema({
-  user: { type: mongoose.Types.ObjectId, ref: "users" },
-  linea: { type: String, required: true },
   categorias: { type: String, required: true },
+  subCategoria: { type: String, required: true },
   nombre: { type: String, required: true },
-  color: { type: Array, required: true },
-  precio: { type: Array, required: true },
-  imagen: { type: Array, required: true },
-  modelo: { type: Array, required: true },
-  stock: {
+  marca: { type: String, required: true },
+  descripcion: { type: String, required: true },
+  imagenGeneral: { type: [String], required: true },
+  stockGeneral: {
     type: Number,
     validate: {
       validator: function (el) {
@@ -19,23 +39,20 @@ const productsSchema = new mongoose.Schema({
       message: "Stock can not be a negative value",
     },
   },
-  pickColor: { type: Array, required: true },
-  descripcion: { type: String, required: true },
-  almacenamiento: { type: Array, required: true, default: true },
-  estado: { type: String, required: true, default: false },
+  estado: { type: String, required: true },
+  precioBase: { type: Number, required: true },
   disponible: { type: Boolean, required: true },
-  transactions: {
-    type: [Schema.Types.ObjectId],
-    ref: "transaction",
-  },
-  date: { type: Date, default: Date.now() },
+  tipo: { type: String, required: true },
+  color: [colorSchema],
+  almacenamiento: [almacenamientoSchema],
+  modelo: [modeloSchema],
 });
 
 productsSchema.pre("save", function (next) {
-  if (this.stock <= 0) {
-    this.status = false;
+  if (this.stockGeneral <= 0) {
+    this.disponible = false;
   } else {
-    this.status = true;
+    this.disponible = true;
   }
   next();
 });
