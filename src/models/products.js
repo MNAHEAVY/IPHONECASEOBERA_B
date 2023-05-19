@@ -2,25 +2,25 @@ const mongoose = require("mongoose");
 const { Schema, model } = require("mongoose");
 
 const colorSchema = new Schema({
-  nombre: String,
-  imageColor: String,
-  stockColor: Number,
-  estado: String,
+  nombre: { type: String },
+  imageColor: { type: String },
+  stockColor: { type: Number },
+  estado: { type: String },
 });
 
 const almacenamientoSchema = new Schema({
-  capacidad: String,
-  precio: Number,
-  stockStorage: Number,
-  disponible: Boolean,
-  estado: String,
+  capacidad: { type: String },
+  precio: { type: Number },
+  stockStorage: { type: Number },
+  disponible: { type: Boolean },
+  estado: { type: String },
 });
 const modeloSchema = new Schema({
-  nombre: String,
-  precio: Number,
-  stockModel: Number,
-  disponible: Boolean,
-  imageModel: String,
+  nombre: { type: String },
+  precio: { type: Number },
+  stockModel: { type: Number },
+  disponible: { type: Boolean },
+  imageModel: { type: String },
 });
 
 const productsSchema = new mongoose.Schema({
@@ -28,8 +28,8 @@ const productsSchema = new mongoose.Schema({
   subCategoria: { type: String, required: true },
   nombre: { type: String, required: true },
   marca: { type: String, required: true },
-  descripcion: { type: String, required: true },
-  imagenGeneral: { type: [String], required: true },
+  descripcion: { type: String },
+  imagenGeneral: [{ type: String, required: true }],
   stockGeneral: {
     type: Number,
     validate: {
@@ -42,7 +42,7 @@ const productsSchema = new mongoose.Schema({
   estado: { type: String, required: true },
   precioBase: { type: Number, required: true },
   disponible: { type: Boolean, required: true },
-  tipo: { type: String, required: true },
+  tipo: { type: String },
   color: [colorSchema],
   almacenamiento: [almacenamientoSchema],
   modelo: [modeloSchema],

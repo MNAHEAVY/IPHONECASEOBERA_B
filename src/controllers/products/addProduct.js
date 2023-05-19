@@ -38,6 +38,7 @@ const createProduct = async (req, res) => {
     const savedProduct = await newProduct.save();
     return res.status(201).json(savedProduct);
   } catch (error) {
+    console.error(error); // Imprime el error para ayudar a diagnosticar el problema.
     res.status(500).json({ message: "Internal server error" });
   }
 };
