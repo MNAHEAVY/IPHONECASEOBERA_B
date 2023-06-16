@@ -18,7 +18,7 @@ router.get("/users", async (req, res) => {
   const { email } = req.query;
 
   try {
-    const user = await Users.findOne({ email });
+    const user = await Users.findOne({ email }).populate("cart favorites");
     if (user) {
       res.send(user);
     } else {
@@ -29,6 +29,7 @@ router.get("/users", async (req, res) => {
     res.status(500).send("Error interno del servidor");
   }
 });
+
 // Route for creating a new user
 
 router.post("/users", async (req, res) => {
@@ -81,6 +82,8 @@ router.put("/users/:id", async (req, res) => {
         $set: {
           address: req.body.address,
           payment: req.body.payment,
+          cart: req.body.cart,
+          favorites: req.body.favorites,
         },
       },
       { new: true }

@@ -46,6 +46,26 @@ const usersSchema = new mongoose.Schema({
 
     buyHistory: { type: [Schema.Types.ObjectId], ref: "transaction" },
   },
+  favorites: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "products",
+    },
+  ],
+
+  cart: [
+    {
+      product: {
+        type: Schema.Types.ObjectId,
+        ref: "products",
+        required: true,
+      },
+      quantity: {
+        type: Number,
+        default: 1,
+      },
+    },
+  ],
 });
 
 const Users = mongoose.model("users", usersSchema);
