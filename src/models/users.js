@@ -60,6 +60,13 @@ const usersSchema = new mongoose.Schema({
         ref: "products",
         required: true,
       },
+      name: { type: String },
+      image: { type: String },
+      stock: { type: Number },
+      color: { type: String },
+      model: { type: String },
+      capacidad: { type: String },
+      price: { type: Number },
       quantity: {
         type: Number,
         default: 1,

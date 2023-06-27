@@ -12,8 +12,8 @@ const createPreference = async (req, res) => {
   let itemsMp = [];
   for (let item of items) {
     let itemObj = {
-      id: item._id,
-      name: item.nombre,
+      id: item.product,
+      name: item.name,
       quantity: item.quantity.toString(),
     };
 
@@ -22,7 +22,7 @@ const createPreference = async (req, res) => {
 
   let total_value = 0;
   for (let itemV of items) {
-    total_value = total_value + itemV.precio * itemV.quantity;
+    total_value = total_value + itemV.price * itemV.quantity;
   }
 
   const preferenceData = {
