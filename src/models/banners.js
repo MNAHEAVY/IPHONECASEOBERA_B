@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { Schema, model } = require("mongoose");
 
-const bannersSchema = new mongoose.Schema({
+const bannerSchema = new mongoose.Schema({
   titulo: { type: String, required: true },
   descripcion: { type: String, required: true },
   imagen: { type: String, required: true },
@@ -11,6 +11,6 @@ const bannersSchema = new mongoose.Schema({
   fechaCreacion: { type: Date, default: Date.now },
 });
 
-const Banners = mongoose.model("banners", bannersSchema);
+const Banner = mongoose.model("banner", bannerSchema);
 
-module.exports = Banners;
+module.exports = Banner;

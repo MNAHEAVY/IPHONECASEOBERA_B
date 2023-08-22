@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { Schema, model } = require("mongoose");
 
-const usersSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
   email: { type: String, required: true },
   email_verified: { type: Boolean, required: true },
   family_name: { type: String, required: false },
@@ -11,6 +11,7 @@ const usersSchema = new mongoose.Schema({
   nickname: { type: String, required: false },
   picture: { type: String, required: false },
   sub: { type: String, required: false },
+
   address: {
     pais: { type: String, required: false, default: "Argentina" },
     provincia: { type: String, required: false, default: "Misiones" },
@@ -18,6 +19,9 @@ const usersSchema = new mongoose.Schema({
     direccion: { type: String, required: false, default: "Almte. Brown 00" },
     codigo_postal: { type: String, required: false, default: "3364" },
   },
+  isSuscribed: { type: Boolean, default: false },
+  hasDiscount: { type: Boolean, default: false },
+  oberCoins: { type: Number, default: 0 },
   payment: {
     cardType: { type: String, required: false, default: "Visa" },
     cardName: { type: String, required: false, default: "Jhon Smith" },
@@ -46,35 +50,15 @@ const usersSchema = new mongoose.Schema({
 
     buyHistory: { type: [Schema.Types.ObjectId], ref: "transaction" },
   },
-  favorites: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "products",
-    },
-  ],
-
+  favorites: [{ type: Schema.Types.ObjectId, ref: "favorite" }],
   cart: [
     {
-      product: {
-        type: Schema.Types.ObjectId,
-        ref: "products",
-        required: true,
-      },
-      name: { type: String },
-      image: { type: String },
-      stock: { type: Number },
-      color: { type: String },
-      model: { type: String },
-      capacidad: { type: String },
-      price: { type: Number },
-      quantity: {
-        type: Number,
-        default: 1,
-      },
+      type: Schema.Types.ObjectId,
+      ref: "cart",
     },
   ],
 });
 
-const Users = mongoose.model("users", usersSchema);
+const User = mongoose.model("user", userSchema);
 
-module.exports = Users;
+module.exports = User;

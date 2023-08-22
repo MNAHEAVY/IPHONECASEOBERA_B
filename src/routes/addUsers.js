@@ -1,13 +1,15 @@
 const express = require("express");
 
-const Users = require("../../src/models/users");
+const User = require("../../src/models/users");
+const Favorite = require("../../src/models/favs");
+const Cart = require("../../src/models/cart");
 
 const router = express.Router();
 
 // route for get user
 router.get("/allusers", async (req, res) => {
   try {
-    const allUsers = await Users.find({});
+    const allUsers = await User.find({});
     return res.status(200).json(allUsers);
   } catch (error) {
     res.status(500).json({ message: "internal server error" });
@@ -18,7 +20,7 @@ router.get("/users", async (req, res) => {
   const { email } = req.query;
 
   try {
-    const user = await Users.findOne({ email }).populate("cart favorites");
+    const user = await User.findOne({ email });
     if (user) {
       res.send(user);
     } else {
@@ -47,13 +49,13 @@ router.post("/users", async (req, res) => {
 
   try {
     // Check if the user already exists
-    const existingUser = await Users.findOne({ email: email });
+    const existingUser = await User.findOne({ email: email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
     // Create a new user
-    const newUser = new Users({
+    const newUser = new User({
       email,
       email_verified,
       family_name,
@@ -76,7 +78,7 @@ router.post("/users", async (req, res) => {
 
 router.put("/users/:id", async (req, res) => {
   try {
-    const updatedUser = await Users.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       {
         $set: {
@@ -97,6 +99,40 @@ router.put("/users/:id", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.get("/users/:userId/cart", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const user = await User.findById(userId).populate("cart");
+
+    if (!user) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    res.status(200).json(user.cart);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Ocurrió un error al obtener el carrito del usuario" });
+  }
+});
+
+router.get("/users/:userId/favs", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const user = await User.findById(userId).populate("favorites");
+
+    if (!user) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    res.status(200).json(user.favorites);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Ocurrió un error al obtener el carrito del usuario" });
   }
 });
 
@@ -125,56 +161,68 @@ router.post("/users/cart", async (req, res) => {
       capacidad,
       price: precio,
       quantity: cantidad,
+      user: userId,
     };
 
-    const user = await Users.findById(userId);
+    const user = await User.findById(userId).populate("cart");
 
     if (!user) {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
-    const isProductInCart = user.cart.some((item) => item.name === nombre);
+    const isProductInCart = user.cart.some(
+      (item) =>
+        item.color === color && item.model === modelo && item.capacidad === capacidad
+    );
     if (isProductInCart) {
       return res.status(400).json({
-        error: "El producto ya está en el carrito o una variante del mismo",
+        message: "El producto ya está en el carrito o una variante del mismo",
       });
     }
 
-    user.cart.push(newItem);
-    await user.save();
+    const cart = new Cart(newItem);
+    await cart.save();
 
-    res
-      .status(200)
-      .json({ message: "Producto agregado al carrito correctamente" });
+    user.cart.push(cart);
+    await user.save();
+    res.status(200).json(cart.toObject());
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ error: "Ocurrió un error al agregar el producto al carrito" });
+    res.status(500).json({ error: "Ocurrió un error al agregar el producto al carrito" });
   }
 });
+
 router.post("/users/favs", async (req, res) => {
   try {
-    const { userId, productId } = req.body; // Recibe el ID del usuario y el ID del producto desde el cuerpo de la solicitud
+    const { userId, productId } = req.body;
 
-    const user = await Users.findById(userId);
+    const user = await User.findById(userId).populate("favorites"); // Populate para obtener los favoritos
 
     if (!user) {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
-    // Verificar si el producto ya está en la lista de favoritos
-    const isProductInFavorites = user.favorites.includes(productId);
+    const isProductInFavorites = user.favorites.some((favorite) =>
+      favorite.product.equals(productId)
+    );
+
     if (isProductInFavorites) {
       return res
         .status(400)
         .json({ error: "El producto ya está en la lista de favoritos" });
     }
 
-    user.favorites.push(productId);
+    const newFavorite = new Favorite({
+      product: productId,
+      user: userId,
+    });
+
+    await newFavorite.save();
+
+    user.favorites.push(newFavorite);
     await user.save();
 
-    res.json(user.favorites); // Devuelve los favoritos actualizados como respuesta
+    res.status(200).json(newFavorite.toObject());
   } catch (error) {
     console.error(error);
     res
@@ -184,64 +232,54 @@ router.post("/users/favs", async (req, res) => {
 });
 
 router.delete("/users/cart/:userId/:itemId", async (req, res) => {
+  const userId = req.params.userId;
+  const itemId = req.params.itemId;
+
   try {
-    const { userId, itemId } = req.params; // Recibe el ID del usuario y el ID del elemento a eliminar desde los parámetros de la solicitud
+    const cartItem = await Cart.findOneAndDelete({
+      user: userId,
+      _id: itemId,
+    });
 
-    const user = await Users.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
+    if (!cartItem) {
+      return res.status(404).json({ message: "Cart item not found" });
     }
 
-    // Verificar si el elemento existe en el carrito
-    const itemIndex = user.cart.findIndex(
-      (item) => item._id.toString() === itemId
-    );
-    if (itemIndex === -1) {
-      return res
-        .status(404)
-        .json({ error: "El elemento no existe en el carrito" });
-    }
+    // Remove the item from the user's cart array
+    await User.findByIdAndUpdate(userId, {
+      $pull: { cart: itemId },
+    });
 
-    user.cart.splice(itemIndex, 1); // Eliminar el elemento del carrito
-    await user.save();
-
-    res.json(user.cart);
+    res.status(200).json({ message: "Cart item deleted successfully" });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ error: "Ocurrió un error al eliminar el elemento del carrito" });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
-router.delete("/users/favs/:userId/:productId", async (req, res) => {
+router.delete("/users/favs/:userId/:itemId", async (req, res) => {
+  const userId = req.params.userId;
+  const itemId = req.params.itemId;
+
   try {
-    const { userId, productId } = req.params; // Recibe el ID del usuario y el ID del producto a eliminar desde los parámetros de la solicitud
+    const favsItem = await Favorite.findOneAndDelete({
+      user: userId,
+      _id: itemId,
+    });
 
-    const user = await Users.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
+    if (!favsItem) {
+      return res.status(404).json({ message: "Favs item not found" });
     }
 
-    // Verificar si el producto existe en la lista de favoritos
-    const productIndex = user.favorites.indexOf(productId);
-    if (productIndex === -1) {
-      return res
-        .status(404)
-        .json({ error: "El producto no existe en la lista de favoritos" });
-    }
+    // Remove the item from the user's cart array
+    await User.findByIdAndUpdate(userId, {
+      $pull: { favorites: itemId },
+    });
 
-    user.favorites.splice(productIndex, 1); // Eliminar el producto de la lista de favoritos
-    await user.save();
-
-    res.json(user.favorites);
+    res.status(200).json({ message: "favs item deleted successfully" });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ error: "Ocurrió un error al eliminar el producto de favoritos" });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
