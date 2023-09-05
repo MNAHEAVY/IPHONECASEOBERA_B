@@ -4,7 +4,7 @@ const Values = require("../../models/values");
 
 const getValues = async (req, res) => {
   try {
-    const one = await Values.findById({ _id: "64e5303ef2a4091d4a11ec20" });
+    const one = await Values.findById({ _id: "64f6726b28477760152923a8" });
     if (!one) {
       return res.status(404).json({ message: "Values not found" });
     }

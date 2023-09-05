@@ -7,8 +7,11 @@ mercadopago.configure({
 });
 
 const createPreference = async (req, res) => {
-  const { items } = req.body;
+  const { items, envio } = req.body;
 
+  const shippingCost = parseFloat(envio);
+
+  console.log(envio);
   let itemsMp = [];
   for (let item of items) {
     let itemObj = {
@@ -21,9 +24,11 @@ const createPreference = async (req, res) => {
   }
 
   let total_value = 0;
+
   for (let itemV of items) {
     total_value = total_value + itemV.price * itemV.quantity;
   }
+  total_value += shippingCost;
 
   const preferenceData = {
     items: [

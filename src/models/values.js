@@ -10,6 +10,7 @@ const valuesSchema = new mongoose.Schema({
   flete: { type: Number, required: true, default: 750 },
   profit: { type: Number, required: true, default: 750 },
   obercoins: { type: Number, required: true, default: 750 },
+  costosDeEnvio: { type: Object },
 });
 
 const Values = mongoose.model("values", valuesSchema);
