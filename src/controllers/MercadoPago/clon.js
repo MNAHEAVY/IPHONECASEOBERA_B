@@ -7,14 +7,9 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 
 const { sendEmail } = require("../utils/nodemail");
-const { Confirmation } = require("../templates/Confirmation");
 const { orderConfirmation } = require("../templates/orderConfirmation");
 
-const {
-  PAYPAL_API,
-  PAYPAL_API_CLIENT,
-  PAYPAL_API_SECRET,
-} = require("../config");
+const { PAYPAL_API, PAYPAL_API_CLIENT, PAYPAL_API_SECRET } = require("../config");
 
 const createOrder = async (req, res, next) => {
   try {
@@ -85,34 +80,27 @@ const createOrder = async (req, res, next) => {
     // Generate an access token
     const {
       data: { access_token },
-    } = await axios.post(
-      "https://api-m.sandbox.paypal.com/v1/oauth2/token",
-      params,
-      {
-        headers: {
-          Content_Type: "application/x-www-form-urlencoded",
-        },
-        auth: {
-          username: PAYPAL_API_CLIENT,
-          password: PAYPAL_API_SECRET,
-        },
-      }
-    );
+    } = await axios.post("https://api-m.sandbox.paypal.com/v1/oauth2/token", params, {
+      headers: {
+        Content_Type: "application/x-www-form-urlencoded",
+      },
+      auth: {
+        username: PAYPAL_API_CLIENT,
+        password: PAYPAL_API_SECRET,
+      },
+    });
 
     console.log(access_token, "sera esto");
 
     // make a request
-    const response = await axios.post(
-      `${PAYPAL_API}/v2/checkout/orders`,
-      order,
-      {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-        },
-      }
-    );
+    const response = await axios.post(`${PAYPAL_API}/v2/checkout/orders`, order, {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    });
 
     console.log(response.data, "i");
+
     //--guardar en user la orden compra
     let products = [];
     cartItem.map((el) =>
@@ -165,6 +153,7 @@ const captureOrder = async (req, res, next) => {
       pubs.push(await Product.findById(publications[i].publicationId));
     }
     console.log(pubs, "y esto"); //ata aca parece que tamb
+
     const purchase_units = pubs.map((e, i) => {
       return {
         quantity: publications[i].quantity,
@@ -196,6 +185,7 @@ const captureOrder = async (req, res, next) => {
       publi.stock -= purchase_units[i].quantity;
       publi.save();
     }
+
     await User.updateOne(
       { _id: buyer_id },
       {
@@ -244,9 +234,7 @@ const cancelPayment = catchAsync(async (req, res, next) => {
     { new: true }
   );
 
-  const publication = await Product.findById(
-    transaction.transaction.publication
-  );
+  const publication = await Product.findById(transaction.transaction.publication);
 
   if (!publication) {
     return next(new AppError("there is no publication with that id", 404));

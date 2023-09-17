@@ -8,6 +8,6 @@ const router = Router();
 
 router.post("/create_preference", createPreference);
 
-router.get("/feedback?", createFeedback);
+router.get("/feedback", createFeedback);
 
 module.exports = router;

@@ -102,6 +102,32 @@ router.put("/users/:id", async (req, res) => {
   }
 });
 
+router.put("/useredit/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const updatedUserData = req.body; // The updated user data sent in the request body
+
+    // Use findByIdAndUpdate to update the user data based on the user's ID
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        $set: updatedUserData, // Update the user data with the new data from the request body
+      },
+      { new: true } // Return the updated user data
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Optionally, you can send the updated user data in the response
+    return res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 router.get("/users/:userId/cart", async (req, res) => {
   try {
     const userId = req.params.userId;

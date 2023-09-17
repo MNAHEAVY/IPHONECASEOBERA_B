@@ -1,77 +1,137 @@
+const Transaction = require("../../models/transactions");
+const User = require("../../models/users");
+const Products = require("../../models/products");
+
+const { sendEmail } = require("../nodemailer/nodemailer");
+const { orderConfirmation } = require("../templates/template");
+
 const mercadopago = require("mercadopago");
 
-// Agrega credenciales
 mercadopago.configure({
-  access_token:
-    "APP_USR-7181501143783555-040200-10d1bd2aae8c6d893fff84424e60a87b-170650346",
+  access_token: "TEST-7181501143783555-040200-6bfa16a8986451664e9f57e4efb45b06-170650346",
+  // "APP_USR-7181501143783555-040200-10d1bd2aae8c6d893fff84424e60a87b-170650346",
 });
 
 const createPreference = async (req, res) => {
-  const { items, envio } = req.body;
+  const { items, envio, payer } = req.body;
 
   const shippingCost = parseFloat(envio);
 
-  console.log(envio);
-  let itemsMp = [];
-  for (let item of items) {
-    let itemObj = {
-      id: item.product,
-      name: item.name,
-      quantity: item.quantity.toString(),
-    };
-
-    itemsMp.push(itemObj);
-  }
-
-  let total_value = 0;
-
-  for (let itemV of items) {
-    total_value = total_value + itemV.price * itemV.quantity;
-  }
-  total_value += shippingCost;
+  const itemsMp = items.map((item) => ({
+    title: item.name,
+    unit_price: item.price,
+    quantity: item.quantity,
+  }));
 
   const preferenceData = {
-    items: [
-      {
-        title: "Mis productos",
-        quantity: 1,
-        unit_price: total_value,
-      },
-    ],
+    items: itemsMp,
     payer: {
-      name: "Juan",
-      surname: "Lopez",
-      email: "user@email.com",
+      name: payer.given_name,
+      surname: payer.family_name,
+      email: payer.email,
       phone: {
-        area_code: "11",
-        number: 4444 - 4444,
+        area_code: "+549",
+        number: payer.phone,
       },
       identification: {
-        type: "DNI",
-        number: "12345678",
+        type: payer.identification.type,
+        number: payer.identification.number.toString(),
       },
       address: {
-        street_name: "Street",
-        street_number: 123,
-        zip_code: "5700",
+        street_name: payer.address.street_name,
+        street_number: payer.address.street_number,
+        zip_code: payer.address.codigo_postal,
       },
     },
+    shipments: {
+      cost: shippingCost,
+      mode: "not_specified",
+    },
     back_urls: {
-      success: "https://iphonecaseobera.com/feedback",
-      failure: "https://iphonecaseobera.com/feedback",
-      pending: "https://iphonecaseobera.com/feedback",
+      success: "http://localhost:3000/feedback",
+      failure: "http://localhost:3000/feedback",
+      pending: "http://localhost:3000/feedback",
     },
     auto_return: "approved",
-    notification_url: "http://localhost:3001/webhooks",
     payment_methods: {},
     notification_url: "https://iphonecaseobera.com/payment",
     statement_descriptor: "IPHONECASEOBERA",
-    external_reference: "plata que entra",
+    external_reference: "pago realizado",
     expires: true,
 
     binary_mode: true,
   };
 
+  //data renew sector & order
+
+  const buyer_id = payer._id;
+  const buyer = await User.findOne({ _id: buyer_id });
+
+  const purchases = items.map((e) => e);
+  const prod = [];
+
+  for (let i = 0; i < purchases.length; i++) {
+    const productId = purchases[i].product;
+    prod.push(await Products.findById(productId));
+  }
+
+  const purchase_units = prod.map((e, i) => {
+    return {
+      quantity: purchases[i].quantity,
+      status: "fulfilled",
+      product: prod[i]._id,
+      total_money: purchases[i].price * purchases[i].quantity,
+    };
+  });
+
+  for (let i = 0; i < purchase_units.length; i++) {
+    const newTransaction = new Transaction({
+      transaction: purchase_units[i],
+      buyer: buyer._id,
+    });
+    const savedTransact = await newTransaction.save();
+
+    //add purchases
+    let products = [];
+    items.map((el) =>
+      products.push({
+        products: el.product,
+        quantity: el.quantity,
+      })
+    );
+
+    await User.findByIdAndUpdate(
+      { _id: buyer._id },
+      {
+        purchases: {
+          products: products,
+        },
+      }
+    );
+
+    //Stock renew
+    const publi = await Products.findOne({
+      _id: purchase_units[i].product,
+    });
+    publi.stockGeneral -= purchase_units[i].quantity;
+    publi.save();
+  }
+
+  const template = orderConfirmation({
+    products: items.map((e, i) => {
+      return {
+        price: e.price,
+        title: e.name,
+        quantity: e.quantity,
+        img: e.image,
+        color: e.color,
+      };
+    }),
+    address: buyer.address.street_name + " " + buyer.address.street_number,
+  });
+  console.log("tem:", template);
+  sendEmail(buyer.email, "Succesfully buy", template);
+  console.log("send:", sendEmail);
   mercadopago.preferences
     .create(preferenceData)
     .then((response) => {
@@ -87,6 +147,10 @@ const createFeedback = async (req, res) => {
   const paymentId = req.query.payment_id;
   const status = req.query.status;
   const merchantOrderId = req.query.merchant_order_id;
+
+  console.log("1", paymentId);
+  console.log("2", status);
+  console.log("3", merchantOrderId);
 
   res.json({
     Payment: paymentId,

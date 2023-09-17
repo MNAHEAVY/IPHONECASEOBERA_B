@@ -11,31 +11,27 @@ const userSchema = new mongoose.Schema({
   nickname: { type: String, required: false },
   picture: { type: String, required: false },
   sub: { type: String, required: false },
-
+  phone: { type: Number, default: 12345678 },
+  identification: {
+    verify: { type: Boolean, required: false, default: false },
+    type: { type: String, required: false, default: "DNI" },
+    number: { type: Number, default: 12345678 },
+  },
   address: {
-    pais: { type: String, required: false, default: "Argentina" },
-    provincia: { type: String, required: false, default: "Misiones" },
-    ciudad: { type: String, required: false, default: "Obera" },
-    direccion: { type: String, required: false, default: "Almte. Brown 00" },
+    verify: { type: Boolean, required: false, default: false },
+    country: { type: String, required: false, default: "Argentina" },
+    state: { type: String, required: false, default: "Misiones" },
+    city: { type: String, required: false, default: "Obera" },
+    street_name: { type: String, required: false, default: "Almte. Brown" },
+    street_number: { type: Number, required: false, default: 123 },
     codigo_postal: { type: String, required: false, default: "3364" },
   },
   isSuscribed: { type: Boolean, default: false },
   hasDiscount: { type: Boolean, default: false },
   oberCoins: { type: Number, default: 0 },
-  payment: {
-    cardType: { type: String, required: false, default: "Visa" },
-    cardName: { type: String, required: false, default: "Jhon Smith" },
-    cardNumber: {
-      type: String,
-      required: false,
-      default: "xxxx-xxxx-xxxx-1234",
-    },
-    expDate: { type: String, required: false, default: "04/2026" },
-    CVV: { type: String, required: false, default: "099" },
-  },
   isAdmin: { type: Boolean, required: false, default: false },
   isBanned: { type: Boolean, required: false, default: false },
-  purchase_order: {
+  purchases: {
     products: [
       {
         products: {
@@ -47,8 +43,6 @@ const userSchema = new mongoose.Schema({
         },
       },
     ],
-
-    buyHistory: { type: [Schema.Types.ObjectId], ref: "transaction" },
   },
   favorites: [{ type: Schema.Types.ObjectId, ref: "favorite" }],
   cart: [
@@ -57,6 +51,7 @@ const userSchema = new mongoose.Schema({
       ref: "cart",
     },
   ],
+  terms: { type: Boolean, required: false, default: false },
 });
 
 const User = mongoose.model("user", userSchema);
