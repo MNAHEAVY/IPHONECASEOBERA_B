@@ -129,9 +129,9 @@ const createPreference = async (req, res) => {
     }),
     address: buyer.address.street_name + " " + buyer.address.street_number,
   });
-  console.log("tem:", template);
-  sendEmail(buyer.email, "Succesfully buy", template);
-  console.log("send:", sendEmail);
+
+  sendEmail(buyer.email, "Compra Exitosa!!", template);
+
   mercadopago.preferences
     .create(preferenceData)
     .then((response) => {
@@ -147,10 +147,6 @@ const createFeedback = async (req, res) => {
   const paymentId = req.query.payment_id;
   const status = req.query.status;
   const merchantOrderId = req.query.merchant_order_id;
-
-  console.log("1", paymentId);
-  console.log("2", status);
-  console.log("3", merchantOrderId);
 
   res.json({
     Payment: paymentId,
