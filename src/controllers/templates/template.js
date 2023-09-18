@@ -29,7 +29,7 @@ exports.orderConfirmation = (info) => {
                                                                   style="font-weight:400;text-align:left;vertical-align:top;padding-top:5px;padding-bottom:5px;border-top:0;border-right:0;border-bottom:0;border-left:0">
                                                                   <div
                                                                       style="height:30px;line-height:30px;font-size:1px">
-                                                                      &hairsp;</div>
+                                                                   </div>
                                                               </td>
                                                           </tr>
                                                       </tbody>
@@ -325,7 +325,7 @@ exports.orderConfirmation = (info) => {
                                                                   style="font-weight:400;text-align:left;vertical-align:top;border-right:1px dotted #e8e8e8;border-top:0;border-bottom:0;border-left:0">
                                                                   <div
                                                                       style="height:45px;line-height:5px;font-size:1px">
-                                                                      &hairsp;</div>
+                                                                    </div>
                                                               </td>
                                                               <td class="m_-5006345486347126279column" width="25%"
                                                                   style="font-weight:400;text-align:left;vertical-align:top;border-right:1px dotted #e8e8e8;padding-left:15px;padding-right:15px;border-top:0;border-bottom:0;border-left:0">
@@ -431,7 +431,7 @@ exports.orderConfirmation = (info) => {
                                                                                       <p
                                                                                           style="margin:0;font-size:14px;text-align:left">
                                                                                           <span
-                                                                                              style="font-size:16px;color:#2190e3"><strong>${e.name}</strong></span>
+                                                                                              style="font-size:16px;color:#2190e3"><strong>${e.title}</strong></span>
                                                                                       </p>
                                       
                                                        
@@ -583,9 +583,9 @@ exports.orderConfirmation = (info) => {
                                                                                               <span
                                                                                                   style="font-size:18px">&nbsp;<strong><a
                                                                                                           style="text-decoration:none;color:#2190e3"
-                                                                                                          href="http://arterest-frontend.vercel.app/"
+                                                                                                          href="iphonecaseobera@gmail.com"
                                                                                                           rel="noopener">iphonecaseobera@gmail.<wbr>com</a></strong></span><br><span
-                                                                                                  style="font-size:18px">3755523864</span>
+                                                                                                  style="font-size:18px">Contactate: 3755-611592</span>
                                                                                           </p>
                                                                                       </div>
                                                                                   </div>
@@ -618,7 +618,7 @@ exports.orderConfirmation = (info) => {
                                                                   style="font-weight:400;text-align:left;vertical-align:top;padding-top:0;padding-bottom:5px;border-top:0;border-right:0;border-bottom:0;border-left:0">
                                                                   <div
                                                                       style="height:20px;line-height:20px;font-size:1px">
-                                                                      &hairsp;</div>
+                                                                </div>
                                                               </td>
                                                           </tr>
                                                       </tbody>
