@@ -10,6 +10,7 @@ const updateValues = async (req, res) => {
     costoGeneral,
     flete,
     profit,
+    obercoins,
   } = req.body;
 
   try {
@@ -23,6 +24,7 @@ const updateValues = async (req, res) => {
         costoGeneral,
         flete,
         profit,
+        obercoins,
       },
       { new: true }
     );
