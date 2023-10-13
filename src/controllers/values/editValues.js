@@ -4,13 +4,15 @@ const updateValues = async (req, res) => {
   const { id } = req.params;
   const {
     dolarBlue,
-    dolarOficial,
-    packaginPremium,
-    packagingSimple,
     costoGeneral,
     flete,
     profit,
     obercoins,
+    costosDeEnvio,
+    costosGeneralIphone,
+    profitIphone,
+    comision,
+    tasa,
   } = req.body;
 
   try {
@@ -18,13 +20,15 @@ const updateValues = async (req, res) => {
       id,
       {
         dolarBlue,
-        dolarOficial,
-        packaginPremium,
-        packagingSimple,
         costoGeneral,
         flete,
         profit,
         obercoins,
+        costosDeEnvio,
+        costosGeneralIphone,
+        profitIphone,
+        comision,
+        tasa,
       },
       { new: true }
     );

@@ -2,15 +2,16 @@ const mongoose = require("mongoose");
 const { Schema, model } = require("mongoose");
 
 const valuesSchema = new mongoose.Schema({
-  dolarBlue: { type: Number, required: true, default: 750 },
-  dolarOficial: { type: Number, required: true, default: 750 },
-  packaginPremium: { type: Number, required: true, default: 750 },
-  packagingSimple: { type: Number, required: true, default: 750 },
-  costoGeneral: { type: Number, required: true, default: 750 },
-  flete: { type: Number, required: true, default: 750 },
-  profit: { type: Number, required: true, default: 750 },
-  obercoins: { type: Number, required: true, default: 750 },
-  costosDeEnvio: { type: Object },
+  dolarBlue: { type: Number },
+  costoGeneral: { type: Number },
+  flete: { type: Number },
+  profit: { type: Number },
+  obercoins: { type: Number },
+  costosDeEnvio: { type: Array },
+  costosGeneralIphone: { type: Number },
+  profitIphone: { type: Object },
+  comision: { type: Number },
+  tasa: { type: Number },
 });
 
 const Values = mongoose.model("values", valuesSchema);
