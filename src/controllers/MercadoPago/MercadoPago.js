@@ -62,8 +62,19 @@ const createPreference = async (req, res) => {
     binary_mode: true,
   };
 
-  //data renew sector & order
-
+  mercadopago.preferences
+    .create(preferenceData)
+    .then((response) => {
+      res.json({ preferenceId: response.body.id });
+    })
+    .catch((error) => {
+      console.log(error);
+      res.status(500).send("An error occurred while creating the preference.");
+    });
+};
+//data renew sector & order
+const paymentSucceded = async (req, res) => {
+  const { items, payer } = req.body;
   const buyer_id = payer._id;
   const buyer = await User.findOne({ _id: buyer_id });
 
@@ -91,11 +102,11 @@ const createPreference = async (req, res) => {
     });
     const savedTransact = await newTransaction.save();
 
-    //add purchases
+    // Add purchases to user
     let products = [];
     items.map((el) =>
       products.push({
-        products: el.product,
+        product: el.product,
         quantity: el.quantity,
       })
     );
@@ -103,13 +114,15 @@ const createPreference = async (req, res) => {
     await User.findByIdAndUpdate(
       { _id: buyer._id },
       {
-        purchases: {
-          products: products,
+        $push: {
+          purchases: {
+            products: products,
+          },
         },
       }
     );
 
-    //Stock renew
+    // Stock renew
     const publi = await Products.findOne({
       _id: purchase_units[i].product,
     });
@@ -117,6 +130,7 @@ const createPreference = async (req, res) => {
     publi.save();
   }
 
+  // Send email confirmation
   const template = orderConfirmation({
     products: items.map((e, i) => {
       return {
@@ -132,15 +146,8 @@ const createPreference = async (req, res) => {
 
   sendEmail(buyer.email, "Compra Exitosa!!", template);
 
-  mercadopago.preferences
-    .create(preferenceData)
-    .then((response) => {
-      res.json({ preferenceId: response.body.id });
-    })
-    .catch((error) => {
-      console.log(error);
-      res.status(500).send("An error occurred while creating the preference.");
-    });
+  // Send a response to the client if needed
+  res.status(200).json({ message: "Purchase successful" });
 };
 
-module.exports = { createPreference };
+module.exports = { createPreference, paymentSucceded };
