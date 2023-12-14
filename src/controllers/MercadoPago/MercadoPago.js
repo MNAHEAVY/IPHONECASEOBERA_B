@@ -8,8 +8,7 @@ const { orderConfirmation } = require("../templates/template");
 const mercadopago = require("mercadopago");
 
 mercadopago.configure({
-  access_token:
-    "APP_USR-7181501143783555-040200-10d1bd2aae8c6d893fff84424e60a87b-170650346",
+  access_token: "TEST-6450638605574076-040316-09c7c84f769c76c9b8f90c3fadb00736-190374808",
 });
 
 const createPreference = async (req, res) => {
@@ -48,9 +47,9 @@ const createPreference = async (req, res) => {
       mode: "not_specified",
     },
     back_urls: {
-      success: "http://iphonecaseobera.com/feedback",
-      failure: "http://iphonecaseobera.com/feedback",
-      pending: "http://iphonecaseobera.com/feedback",
+      success: "https://iphonecaseobera.com/feedback",
+      failure: "https://iphonecaseobera.com/failure",
+      pending: "https://iphonecaseobera.com/pending",
     },
     auto_return: "approved",
     payment_methods: {},
@@ -143,16 +142,4 @@ const createPreference = async (req, res) => {
     });
 };
 
-const createFeedback = async (req, res) => {
-  const paymentId = req.query.payment_id;
-  const status = req.query.status;
-  const merchantOrderId = req.query.merchant_order_id;
-
-  res.json({
-    Payment: paymentId,
-    Status: status,
-    MerchantOrder: merchantOrderId,
-  });
-};
-
-module.exports = { createPreference, createFeedback };
+module.exports = { createPreference };
