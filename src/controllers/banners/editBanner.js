@@ -2,12 +2,13 @@ const Banner = require("../../models/banners");
 
 const updateBanner = async (req, res) => {
   const { id } = req.params;
-  const { titulo, descripcion, imagen, enlace, orden, activo } = req.body;
+  const { tipo, titulo, descripcion, imagen, enlace, orden, activo } = req.body;
 
   try {
     const updatedBanner = await Banner.findByIdAndUpdate(
       id,
       {
+        tipo,
         titulo,
         descripcion,
         imagen,

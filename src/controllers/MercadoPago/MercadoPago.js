@@ -75,6 +75,7 @@ const createPreference = async (req, res) => {
 //data renew sector & order
 const paymentSucceded = async (req, res) => {
   const { items, payer } = req.body;
+  console.log(items, payer);
   const buyer_id = payer._id;
   const buyer = await User.findOne({ _id: buyer_id });
 
@@ -114,10 +115,8 @@ const paymentSucceded = async (req, res) => {
     await User.findByIdAndUpdate(
       { _id: buyer._id },
       {
-        $push: {
-          purchases: {
-            products: products,
-          },
+        purchases: {
+          products: products,
         },
       }
     );
