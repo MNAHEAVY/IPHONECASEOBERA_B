@@ -12,8 +12,6 @@ const valuesSchema = new mongoose.Schema({
   profitIphone: { type: Object },
   comision: { type: Number },
   tasa: { type: Number },
-  mp: { type: Number },
-  rentas: { type: Number },
 });
 
 const Values = mongoose.model("values", valuesSchema);

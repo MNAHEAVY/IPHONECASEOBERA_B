@@ -7,7 +7,7 @@ const CLIENT_ID =
 const CLIENT_SECRET = "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";
 const REDIRECT_URI = "https://developers.google.com/oauthplayground"; // Esta URL debe coincidir con la configuración de la Consola de Desarrolladores
 const REFRESHTOKEN =
-  "1//04PLrnAltHUJnCgYIARAAGAQSNwF-L9IrtL8qsOjjLZAMTkcT4MP9VhjzyBJFfO15kis3341hH_DxkCkf3H7cscyJQu1Wh-b6HfA";
+  "1//04BrxwLt5XMtrCgYIARAAGAQSNwF-L9IrRhMFoAgOVIvNlgqQ5eSVKe5BeclgEKwzQsqzjzjBnRihKK8LRnMMtst2PYwzyRvcxDc";
 
 const myOAuth2Client = new OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI); //creating the settings with 3 params
 
