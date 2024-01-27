@@ -13,6 +13,8 @@ const updateValues = async (req, res) => {
     profitIphone,
     comision,
     tasa,
+    mp,
+    rentas,
   } = req.body;
 
   try {
@@ -29,6 +31,8 @@ const updateValues = async (req, res) => {
         profitIphone,
         comision,
         tasa,
+        mp,
+        rentas,
       },
       { new: true }
     );
