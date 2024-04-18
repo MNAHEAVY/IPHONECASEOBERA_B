@@ -27,6 +27,7 @@ const userSchema = new mongoose.Schema({
     codigo_postal: { type: String, required: false, default: "3364" },
   },
   isSuscribed: { type: Boolean, default: false },
+  suscribedLevel: { type: Number, default: 0 },
   hasDiscount: { type: Boolean, default: false },
   oberCoins: { type: Number, default: 0 },
   isAdmin: { type: Boolean, required: false, default: false },
