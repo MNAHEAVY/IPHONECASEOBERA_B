@@ -1,20 +1,18 @@
+const User = require("../../models/users");
+
 const suscriptorSucceded = async (req, res) => {
-  const { payer } = req.body;
-  const parametro = req.params.parametro;
-  console.log(parametro);
-  const buyer_id = payer._id;
-  const buyer = await User.findOne({ _id: buyer_id });
+  const { payer, parametro } = req.body; // Extrae el parámetro del cuerpo de la solicitud
+  const level = parametro;
 
   await User.findByIdAndUpdate(
-    { _id: buyer._id },
+    payer._id, // Solo pasa el ID del usuario
     {
-      purchases: {
-        products: products,
-      },
+      isSuscribed: true,
+      suscribedLevel: parametro,
     }
   );
 
-  // Send a response to the client if needed
+  // Envía una respuesta al cliente si es necesario
   res.status(200).json({ message: "Purchase successful" });
 };
 
