@@ -1,4 +1,4 @@
-/*const nodemailer = require("nodemailer");
+const nodemailer = require("nodemailer");
 const { google } = require("googleapis");
 const OAuth2 = google.auth.OAuth2;
 
@@ -7,7 +7,7 @@ const CLIENT_ID =
 const CLIENT_SECRET = "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";
 const REDIRECT_URI = "https://developers.google.com/oauthplayground"; // Esta URL debe coincidir con la configuración de la Consola de Desarrolladores
 const REFRESHTOKEN =
-  "1//04BrxwLt5XMtrCgYIARAAGAQSNwF-L9IrRhMFoAgOVIvNlgqQ5eSVKe5BeclgEKwzQsqzjzjBnRihKK8LRnMMtst2PYwzyRvcxDc";
+  "1//04A9zykx7uWyVCgYIARAAGAQSNwF-L9Ir9l0a42eh8AXeUlrmRdI3dH2Wb-TDPLP__MlAxIJcs3fzLLmg5wBGqsvE2XNHd7Jeg2I";
 
 const myOAuth2Client = new OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI); //creating the settings with 3 params
 
@@ -54,4 +54,3 @@ const sendEmail = async (email, subject, textHTML) => {
 };
 
 module.exports = { nodemailer, sendEmail };
-*/

@@ -72,10 +72,10 @@ const createPreference = async (req, res) => {
       res.status(500).send("An error occurred while creating the preference.");
     });
 };
+
 //data renew sector & order
 const paymentSucceded = async (req, res) => {
   const { items, payer } = req.body;
-  console.log(items, payer);
   const buyer_id = payer._id;
   const buyer = await User.findOne({ _id: buyer_id });
 
