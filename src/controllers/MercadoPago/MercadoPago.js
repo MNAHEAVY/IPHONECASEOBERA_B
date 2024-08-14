@@ -8,8 +8,7 @@ const { orderConfirmation } = require("../templates/template");
 const mercadopago = require("mercadopago");
 
 mercadopago.configure({
-  access_token:
-    "APP_USR-7181501143783555-040200-10d1bd2aae8c6d893fff84424e60a87b-170650346",
+  access_token: "TEST-6450638605574076-040316-09c7c84f769c76c9b8f90c3fadb00736-190374808",
 });
 
 const createPreference = async (req, res) => {
@@ -48,13 +47,13 @@ const createPreference = async (req, res) => {
       mode: "not_specified",
     },
     back_urls: {
-      success: "https://iphonecaseobera.com/feedback",
-      failure: "https://iphonecaseobera.com/failure",
-      pending: "https://iphonecaseobera.com/pending",
+      success: "http://localhost:3000/feedback",
+      failure: "http://localhost:3000/failure",
+      pending: "http://localhost:3000/pending",
     },
     auto_return: "approved",
     payment_methods: {},
-    notification_url: "https://iphonecaseobera.com/payment",
+    notification_url: "http://localhost:3000/payment",
     statement_descriptor: "IPHONECASEOBERA",
     external_reference: "pago realizado",
     expires: true,
