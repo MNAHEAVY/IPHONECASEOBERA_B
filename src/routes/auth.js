@@ -55,7 +55,7 @@ router.get(
   (req, res) => {
     const payload = { id: req.user._id, email: req.user.email };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
-    res.redirect(`http://localhost:5173?token=${token}`);
+    res.redirect(`https://iphonecaseobera.com/?token=${token}`);
   }
 );
 
