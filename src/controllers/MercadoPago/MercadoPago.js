@@ -32,10 +32,6 @@ const createPreference = async (req, res) => {
         area_code: "+549",
         number: payer.phone,
       },
-      identification: {
-        type: payer.identification.type,
-        number: payer.identification.number.toString(),
-      },
       address: {
         street_name: payer.address.street_name,
         street_number: payer.address.street_number,
@@ -47,13 +43,13 @@ const createPreference = async (req, res) => {
       mode: "not_specified",
     },
     back_urls: {
-      success: "http://localhost:3000/feedback",
-      failure: "http://localhost:3000/failure",
-      pending: "http://localhost:3000/pending",
+      success: "https://iphonecaseobera.com/feedback",
+      failure: "https://iphonecaseobera.com/failure",
+      pending: "https://iphonecaseobera.com/pending",
     },
     auto_return: "approved",
     payment_methods: {},
-    notification_url: "http://localhost:3000/payment",
+    notification_url: "https://iphonecaseobera.com//payment",
     statement_descriptor: "IPHONECASEOBERA",
     external_reference: "pago realizado",
     expires: true,
