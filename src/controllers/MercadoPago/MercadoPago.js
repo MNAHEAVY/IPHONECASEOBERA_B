@@ -34,7 +34,6 @@ const createPreference = async (req, res) => {
       },
       address: {
         street_name: payer.address.street_name,
-        street_number: payer.address.street_number,
         zip_code: payer.address.codigo_postal,
       },
     },
