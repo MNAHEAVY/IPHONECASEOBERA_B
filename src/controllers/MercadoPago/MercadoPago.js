@@ -32,6 +32,7 @@ const createPreference = async (req, res) => {
         area_code: "+549",
         number: payer.phone,
       },
+    },
     shipments: {
       cost: shippingCost,
       mode: "not_specified",
