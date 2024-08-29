@@ -8,7 +8,7 @@ const { orderConfirmation } = require("../templates/template");
 const mercadopago = require("mercadopago");
 
 mercadopago.configure({
-  access_token: "TEST-6450638605574076-040316-09c7c84f769c76c9b8f90c3fadb00736-190374808",
+  access_token: "APP_USR-7181501143783555-040200-10d1bd2aae8c6d893fff84424e60a87b-170650346",
 });
 
 const createPreference = async (req, res) => {
