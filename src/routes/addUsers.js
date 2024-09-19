@@ -190,16 +190,21 @@ router.post("/users/cart", async (req, res) => {
       user: userId,
     };
 
-    const user = await User.findById(userId).populate("cart");
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
-    const isProductInCart = user.cart.some(
-      (item) =>
-        item.color === color && item.model === modelo && item.capacidad === capacidad
-    );
+    // Compara también el productId, además de color, modelo y capacidad
+    const isProductInCart = await Cart.findOne({
+      user: userId,
+      product: productId, // Se agrega para diferenciar productos con el mismo color pero diferente ID
+      color,
+      model: modelo,
+      capacidad,
+    });
+
     if (isProductInCart) {
       return res.status(400).json({
         message: "El producto ya está en el carrito o una variante del mismo",
@@ -211,6 +216,7 @@ router.post("/users/cart", async (req, res) => {
 
     user.cart.push(cart);
     await user.save();
+
     res.status(200).json(cart.toObject());
   } catch (error) {
     console.error(error);
