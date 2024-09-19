@@ -198,7 +198,7 @@ router.post("/users/cart", async (req, res) => {
 
     const isProductInCart = user.cart.some(
       (item) =>
-        item.id === id
+        item.color === color && item.model === modelo && item.capacidad === capacidad
     );
     if (isProductInCart) {
       return res.status(400).json({
