@@ -88,7 +88,7 @@ router.put("/users/:id", async (req, res) => {
           favorites: req.body.favorites,
         },
       },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedUser) {
@@ -113,7 +113,7 @@ router.put("/useredit/:id", async (req, res) => {
       {
         $set: updatedUserData, // Update the user data with the new data from the request body
       },
-      { new: true } // Return the updated user data
+      { new: true }, // Return the updated user data
     );
 
     if (!updatedUser) {
@@ -235,7 +235,7 @@ router.post("/users/favs", async (req, res) => {
     }
 
     const isProductInFavorites = user.favorites.some((favorite) =>
-      favorite.product.equals(productId)
+      favorite.product.equals(productId),
     );
 
     if (isProductInFavorites) {

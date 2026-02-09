@@ -22,7 +22,7 @@ passport.use(
     } catch (err) {
       return done(err, false);
     }
-  })
+  }),
 );
 
 // Configuración Google OAuth
@@ -51,8 +51,8 @@ passport.use(
       } catch (err) {
         return done(err, false);
       }
-    }
-  )
+    },
+  ),
 );
 
 passport.serializeUser((user, done) => {
