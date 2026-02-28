@@ -1,14 +1,5 @@
 const User = require("../../models/users");
 
-const getUsers = async (req, res) => {
-  const users = await User.find({});
-  try {
-    return res.status(200).json(users);
-  } catch (error) {
-    res.status(500).json({ message: "internal server error" });
-  }
-};
-
 const getUser = async (req, res) => {
   try {
     const one = await User.findOne({ _id: req.params.id });
@@ -20,4 +11,4 @@ const getUser = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-module.exports = { getUser, getUsers };
+module.exports = getUser;
