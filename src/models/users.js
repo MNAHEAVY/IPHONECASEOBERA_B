@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { Schema, model } = mongoose;
 
-const userSchema = new Schema(
+const userSchema = new mongoose.Schema(
   {
     /* =========================
        AUTH / IDENTIDAD
@@ -127,5 +127,6 @@ userSchema.index({ "stats.totalSpent": -1 });
 userSchema.index({ customerState: 1 });
 userSchema.index({ role: 1 });
 
-module.exports = model("User", userSchema);
+const User = mongoose.model("User", userSchema);
+
 module.exports = User;
