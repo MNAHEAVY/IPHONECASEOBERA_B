@@ -21,6 +21,7 @@ app.use(passport.initialize());
 //productos
 
 app.use("/", getRoutes);
+app.use("/", getUsers);
 app.use("/", addUsers);
 app.use("/", getValues);
 app.use("/", payment);
