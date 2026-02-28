@@ -1,142 +1,137 @@
-const Transaction = require("../../models/transactions");
+const mercadopago = require("mercadopago");
+const Order = require("../../models/orders");
 const User = require("../../models/users");
-const Products = require("../../models/products");
+const Product = require("../../models/products");
+const updateUserStats = require("../../utils/updateUserStats");
 
 const { sendEmail } = require("../nodemailer/nodemailer");
 const { orderConfirmation } = require("../templates/template");
 
-const mercadopago = require("mercadopago");
-
 mercadopago.configure({
-  access_token: "APP_USR-7181501143783555-040200-10d1bd2aae8c6d893fff84424e60a87b-170650346",
+  access_token: process.env.MP_ACCESS_TOKEN,
 });
 
 const createPreference = async (req, res) => {
-  const { items, envio, payer } = req.body;
+  try {
+    const { items, envio, payer } = req.body;
 
-  const shippingCost = parseFloat(envio);
+    const user = await User.findById(payer._id);
+    if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
 
-  const itemsMp = items.map((item) => ({
-    title: item.name,
-    unit_price: item.price,
-    quantity: item.quantity,
-  }));
+    const shippingCost = Number(envio);
 
-  const preferenceData = {
-    items: itemsMp,
-    payer: {
-      name: payer.given_name,
-      surname: payer.family_name,
-      email: payer.email,
-      phone: {
-        area_code: "+549",
-        number: payer.phone,
+    const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+    const total = subtotal + shippingCost;
+
+    // 🔥 Crear orden en estado pending
+    const newOrder = await Order.create({
+      user: user._id,
+      items: items.map((item) => ({
+        product: item.product,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+      totals: {
+        subtotal,
+        shipping: shippingCost,
+        total,
       },
-    },
-    shipments: {
-      cost: shippingCost,
-      mode: "not_specified",
-    },
-    back_urls: {
-      success: "https://iphonecaseobera.com/feedback",
-      failure: "https://iphonecaseobera.com/feedback",
-      pending: "https://iphonecaseobera.com/feedback",
-    },
-    auto_return: "approved",
-    payment_methods: {},
-    notification_url: "https://iphonecaseobera.com/payment",
-    statement_descriptor: "IPHONECASEOBERA",
-    external_reference: "pago realizado",
-    expires: true,
-
-    binary_mode: true,
-  };
-
-  mercadopago.preferences
-    .create(preferenceData)
-    .then((response) => {
-      res.json({ preferenceId: response.body.id });
-    })
-    .catch((error) => {
-      console.log(error);
-      res.status(500).send("An error occurred while creating the preference.");
+      payment: {
+        provider: "mercadopago",
+        status: "pending",
+      },
+      status: "pending",
     });
+
+    const preference = await mercadopago.preferences.create({
+      items: items.map((item) => ({
+        title: item.name,
+        unit_price: item.price,
+        quantity: item.quantity,
+      })),
+      payer: {
+        email: user.email,
+      },
+      shipments: {
+        cost: shippingCost,
+      },
+      back_urls: {
+        success: "https://iphonecaseobera.com/feedback?status=success",
+        failure: "https://iphonecaseobera.com/feedback?status=failure",
+        pending: "https://iphonecaseobera.com/feedback?status=pending",
+      },
+      auto_return: "approved",
+      notification_url: "https://iphonecaseobera.com/api/payment/webhook",
+      external_reference: newOrder._id.toString(),
+      binary_mode: true,
+    });
+
+    res.json({ preferenceId: preference.body.id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error creando preferencia" });
+  }
 };
 
-//data renew sector & order
-const paymentSucceded = async (req, res) => {
-  const { items, payer } = req.body;
-  const buyer_id = payer._id;
-  const buyer = await User.findOne({ _id: buyer_id });
+const mercadoPagoWebhook = async (req, res) => {
+  try {
+    const paymentId = req.query["data.id"];
 
-  const purchases = items.map((e) => e);
-  const prod = [];
+    if (!paymentId) return res.sendStatus(200);
 
-  for (let i = 0; i < purchases.length; i++) {
-    const productId = purchases[i].product;
-    prod.push(await Products.findById(productId));
-  }
+    const payment = await mercadopago.payment.findById(paymentId);
 
-  const purchase_units = prod.map((e, i) => {
-    return {
-      quantity: purchases[i].quantity,
-      status: "fulfilled",
-      product: prod[i]._id,
-      total_money: purchases[i].price * purchases[i].quantity,
-    };
-  });
+    if (payment.body.status !== "approved") {
+      return res.sendStatus(200);
+    }
 
-  for (let i = 0; i < purchase_units.length; i++) {
-    const newTransaction = new Transaction({
-      transaction: purchase_units[i],
-      buyer: buyer._id,
-    });
-    const savedTransact = await newTransaction.save();
+    const orderId = payment.body.external_reference;
 
-    // Add purchases to user
-    let products = [];
-    items.map((el) =>
-      products.push({
-        product: el.product,
-        quantity: el.quantity,
-      })
-    );
+    const order = await Order.findById(orderId);
+    if (!order) return res.sendStatus(200);
 
-    await User.findByIdAndUpdate(
-      { _id: buyer._id },
-      {
-        purchases: {
-          products: products,
-        },
+    if (order.payment.status === "paid") {
+      return res.sendStatus(200); // evitar duplicados
+    }
+
+    // 🔥 Actualizar orden
+    order.payment.status = "paid";
+    order.payment.transactionId = paymentId;
+    order.status = "paid";
+
+    await order.save();
+
+    // 🔥 Actualizar stock
+    for (const item of order.items) {
+      const product = await Product.findById(item.product);
+      if (product) {
+        product.stockGeneral -= item.quantity;
+        await product.save();
       }
-    );
+    }
 
-    // Stock renew
-    const publi = await Products.findOne({
-      _id: purchase_units[i].product,
+    // 🔥 Actualizar stats usuario
+    await updateUserStats(order.user);
+
+    // 🔥 Enviar email
+    const user = await User.findById(order.user);
+
+    const template = orderConfirmation({
+      products: order.items,
+      address: user.address.street_name + " " + user.address.street_number,
     });
-    publi.stockGeneral -= purchase_units[i].quantity;
-    publi.save();
+
+    await sendEmail(user.email, "Compra Exitosa!!", template);
+
+    res.sendStatus(200);
+  } catch (error) {
+    console.error(error);
+    res.sendStatus(500);
   }
-
-  // Send email confirmation
-  const template = orderConfirmation({
-    products: items.map((e, i) => {
-      return {
-        price: e.price,
-        title: e.name,
-        quantity: e.quantity,
-        img: e.image,
-        color: e.color,
-      };
-    }),
-    address: buyer.address.street_name + " " + buyer.address.street_number,
-  });
-
-  sendEmail(buyer.email, "Compra Exitosa!!", template);
-
-  // Send a response to the client if needed
-  res.status(200).json({ message: "Purchase successful" });
 };
-
-module.exports = { createPreference, paymentSucceded };
+module.exports = {
+  createPreference,
+  mercadoPagoWebhook,
+};
