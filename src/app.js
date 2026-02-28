@@ -6,6 +6,7 @@ const app = express();
 const passport = require("./passport");
 const getRoutes = require("./routes/getProducts");
 const addUsers = require("./routes/addUsers");
+const getUsers = require("./routes/getUsers");
 const getValues = require("./routes/getValues");
 const payment = require("./routes/paymentRoutes");
 const banners = require("./routes/banners");
