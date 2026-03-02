@@ -1,5 +1,5 @@
-const User = require("../models/User");
-const Order = require("../models/Order");
+const User = require("../models/users");
+const Order = require("../models/orders");
 
 async function updateUserStats(userId) {
   // Buscar todas las órdenes pagadas del usuario
