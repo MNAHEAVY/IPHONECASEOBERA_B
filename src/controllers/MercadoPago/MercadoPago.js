@@ -10,7 +10,7 @@ const { orderConfirmation } = require("../templates/template");
 mercadopago.configure({
   access_token: process.env.MP_ACCESS_TOKEN,
 });
-
+// NS
 const createPreference = async (req, res) => {
   try {
     const { items, envio, payer } = req.body;
