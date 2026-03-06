@@ -1,62 +1,175 @@
 const mongoose = require("mongoose");
 const { Schema, model } = require("mongoose");
+/* =========================
+VARIANTE (motor real de inventario)
+========================= */
 
-const colorSchema = new Schema({
-  nombre: { type: String },
-  imageColor: { type: String },
-  stockColor: { type: Number },
-  estado: { type: String },
-});
+const variantSchema = new Schema({
+  sku: {
+    type: String,
+    required: true,
+    unique: true,
+  },
 
-const almacenamientoSchema = new Schema({
-  capacidad: { type: String },
-  precio: { type: Number },
-  stockStorage: { type: Number },
-  disponible: { type: Boolean },
-  estado: { type: String },
-});
-const modeloSchema = new Schema({
-  nombre: { type: String },
-  precio: { type: Number },
-  stockModel: { type: Number },
-  disponible: { type: Boolean },
-  imageModel: { type: String },
-});
-
-const productsSchema = new mongoose.Schema({
-  categorias: { type: String, required: true },
-  subCategoria: { type: String, required: true },
-  nombre: { type: String, required: true },
-  marca: { type: String, required: true },
-  descripcion: { type: String },
-  imagenGeneral: [{ type: String, required: true }],
-  stockGeneral: {
+  price: {
     type: Number,
-    validate: {
-      validator: function (el) {
-        return el >= 0;
+    required: true,
+  },
+
+  stock: {
+    type: Number,
+    default: 0,
+  },
+
+  attributes: {
+    color: String,
+    storage: String,
+    model: String,
+    size: String,
+  },
+
+  images: [String],
+
+  available: {
+    type: Boolean,
+    default: true,
+  },
+});
+
+/* =========================
+PRODUCTO
+========================= */
+
+const productSchema = new Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+    },
+
+    slug: {
+      type: String,
+      unique: true,
+    },
+
+    brand: {
+      type: String,
+      default: "Apple",
+    },
+
+    category: {
+      type: String,
+      enum: ["iphone", "ipad", "mac", "watch", "airpods", "accessorios", "otros"],
+      required: true,
+    },
+
+    subCategory: {
+      type: String,
+      enum: [
+        "iPhone 17",
+        "iPhone 16",
+        "iPhone 15",
+        "iPhone 14",
+        "iPhone SE",
+        "iPhone 13",
+        "iPad Pro",
+        "iPad Air",
+        "iPad",
+        "iPad mini",
+        "MacBook Air",
+        "MacBook Pro",
+        "iMac",
+        "Mac mini",
+        "Mac Studio",
+        "Mac Pro",
+        "Apple Watch Series 9",
+        "Apple Watch Ultra",
+        "Apple Watch SE",
+        "AirPods Pro",
+        "AirPods (3ª generación)",
+      ],
+    },
+
+    description: String,
+
+    basePrice: Number,
+
+    images: [String],
+
+    /* =========================
+       COMPATIBILIDAD (clave para accesorios)
+    ========================= */
+
+    compatibleWith: [
+      {
+        device: String,
+        type: String, // iphone, watch, mac
       },
-      message: "Stock can not be a negative value",
+    ],
+
+    /* =========================
+       VARIANTES
+    ========================= */
+
+    variants: [variantSchema],
+
+    /* =========================
+       INVENTARIO GLOBAL
+    ========================= */
+
+    totalStock: {
+      type: Number,
+      default: 0,
+    },
+
+    available: {
+      type: Boolean,
+      default: true,
+    },
+
+    /* =========================
+       SEO
+    ========================= */
+
+    seo: {
+      title: String,
+      description: String,
+    },
+
+    /* =========================
+       ANALYTICS
+    ========================= */
+
+    analytics: {
+      views: { type: Number, default: 0 },
+      purchases: { type: Number, default: 0 },
+      conversionRate: { type: Number, default: 0 },
     },
   },
-  estado: { type: String, required: true },
-  precioBase: { type: Number, required: true },
-  disponible: { type: Boolean, required: true },
-  tipo: { type: String },
-  color: [colorSchema],
-  almacenamiento: [almacenamientoSchema],
-  modelo: [modeloSchema],
-});
+  { timestamps: true },
+);
 
-productsSchema.pre("save", function (next) {
-  if (this.stockGeneral <= 0) {
-    this.disponible = false;
-  } else {
-    this.disponible = true;
-  }
+/* =========================
+AUTO CALCULAR STOCK TOTAL
+========================= */
+
+productSchema.pre("save", function (next) {
+  const total = this.variants.reduce((acc, v) => acc + v.stock, 0);
+
+  this.totalStock = total;
+  this.available = total > 0;
+
   next();
 });
 
-const Products = mongoose.model("products", productsSchema);
+/* =========================
+ÍNDICES
+========================= */
+
+productSchema.index({ name: "text", description: "text" });
+productSchema.index({ category: 1 });
+productSchema.index({ "variants.sku": 1 });
+
+const Products = mongoose.model("Products", productSchema);
 
 module.exports = Products;
