@@ -18,17 +18,52 @@ const orderSchema = new Schema(
           ref: "products",
           required: true,
         },
-        name: String,
-        price: Number,
-        quantity: Number,
-        subtotal: Number,
+        sku: {
+          type: String,
+          required: true,
+        },
+        name: {
+          type: String,
+          default: "",
+        },
+        image: {
+          type: String,
+          default: "",
+        },
+        price: {
+          type: Number,
+          default: 0,
+        },
+        quantity: {
+          type: Number,
+          default: 1,
+        },
+        subtotal: {
+          type: Number,
+          default: 0,
+        },
+        attributes: {
+          color: {
+            type: String,
+            default: "",
+          },
+          model: {
+            type: String,
+            default: "",
+          },
+          storage: {
+            type: String,
+            default: "",
+          },
+        },
       },
     ],
 
     payment: {
-      method: {
+      provider: {
         type: String,
         enum: ["mercadopago", "transfer", "cash", "card"],
+        default: "mercadopago",
       },
       status: {
         type: String,
@@ -36,6 +71,12 @@ const orderSchema = new Schema(
         default: "pending",
       },
       transactionId: String,
+    },
+
+    status: {
+      type: String,
+      enum: ["pending", "paid", "failed", "cancelled", "completed"],
+      default: "pending",
     },
 
     shipping: {
@@ -56,10 +97,22 @@ const orderSchema = new Schema(
     },
 
     totals: {
-      subtotal: Number,
-      shippingCost: Number,
-      discount: Number,
-      total: Number,
+      subtotal: {
+        type: Number,
+        default: 0,
+      },
+      shipping: {
+        type: Number,
+        default: 0,
+      },
+      discount: {
+        type: Number,
+        default: 0,
+      },
+      total: {
+        type: Number,
+        default: 0,
+      },
     },
 
     currency: {
@@ -78,6 +131,7 @@ const orderSchema = new Schema(
 orderSchema.index({ user: 1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ "payment.status": 1 });
+orderSchema.index({ status: 1 });
 
 orderSchema.post("save", async function (doc) {
   if (doc.payment.status === "paid") {

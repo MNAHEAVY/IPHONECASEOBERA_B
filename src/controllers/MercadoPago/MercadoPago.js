@@ -16,22 +16,34 @@ const createPreference = async (req, res) => {
     const { items, envio, payer } = req.body;
 
     const user = await User.findById(payer._id);
-    if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+    if (!user) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
 
-    const shippingCost = Number(envio);
+    const shippingCost = Number(envio) || 0;
 
-    const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const subtotal = items.reduce(
+      (acc, item) => acc + (Number(item.price) || 0) * (Number(item.quantity) || 0),
+      0,
+    );
 
     const total = subtotal + shippingCost;
 
-    // 🔥 Crear orden en estado pending
     const newOrder = await Order.create({
       user: user._id,
       items: items.map((item) => ({
         product: item.product,
+        sku: item.sku,
         name: item.name,
-        price: item.price,
-        quantity: item.quantity,
+        image: item.image || "",
+        price: Number(item.price) || 0,
+        quantity: Number(item.quantity) || 1,
+        subtotal: (Number(item.price) || 0) * (Number(item.quantity) || 0),
+        attributes: {
+          color: item.attributes?.color || "",
+          model: item.attributes?.model || "",
+          storage: item.attributes?.storage || "",
+        },
       })),
       totals: {
         subtotal,
@@ -48,8 +60,8 @@ const createPreference = async (req, res) => {
     const preference = await mercadopago.preferences.create({
       items: items.map((item) => ({
         title: item.name,
-        unit_price: item.price,
-        quantity: item.quantity,
+        unit_price: Number(item.price) || 0,
+        quantity: Number(item.quantity) || 1,
       })),
       payer: {
         email: user.email,
@@ -74,12 +86,13 @@ const createPreference = async (req, res) => {
     res.status(500).json({ error: "Error creando preferencia" });
   }
 };
-
 const mercadoPagoWebhook = async (req, res) => {
   try {
     const paymentId = req.query["data.id"];
 
-    if (!paymentId) return res.sendStatus(200);
+    if (!paymentId) {
+      return res.sendStatus(200);
+    }
 
     const payment = await mercadopago.payment.findById(paymentId);
 
@@ -90,40 +103,64 @@ const mercadoPagoWebhook = async (req, res) => {
     const orderId = payment.body.external_reference;
 
     const order = await Order.findById(orderId);
-    if (!order) return res.sendStatus(200);
-
-    if (order.payment.status === "paid") {
-      return res.sendStatus(200); // evitar duplicados
+    if (!order) {
+      return res.sendStatus(200);
     }
 
-    // 🔥 Actualizar orden
+    if (order.payment.status === "paid") {
+      return res.sendStatus(200);
+    }
+
     order.payment.status = "paid";
     order.payment.transactionId = paymentId;
     order.status = "paid";
 
     await order.save();
 
-    // 🔥 Actualizar stock
     for (const item of order.items) {
       const product = await Product.findById(item.product);
-      if (product) {
-        product.stockGeneral -= item.quantity;
-        await product.save();
+
+      if (!product) continue;
+
+      const variant = product.variants.find((v) => v.sku === item.sku);
+
+      if (!variant) {
+        console.warn(
+          `Variante no encontrada para product ${item.product} con sku ${item.sku}`,
+        );
+        continue;
       }
+
+      variant.stock = Math.max(
+        0,
+        (Number(variant.stock) || 0) - (Number(item.quantity) || 0),
+      );
+
+      variant.available = variant.stock > 0;
+
+      product.totalStock = product.variants.reduce(
+        (acc, v) => acc + (Number(v.stock) || 0),
+        0,
+      );
+
+      product.available = product.totalStock > 0;
+
+      await product.save();
     }
 
-    // 🔥 Actualizar stats usuario
     await updateUserStats(order.user);
 
-    // 🔥 Enviar email
     const user = await User.findById(order.user);
 
-    const template = orderConfirmation({
-      products: order.items,
-      address: user.address.street_name + " " + user.address.street_number,
-    });
+    if (user) {
+      const template = orderConfirmation({
+        products: order.items,
+        address:
+          `${user.address?.street_name || ""} ${user.address?.street_number || ""}`.trim(),
+      });
 
-    await sendEmail(user.email, "Compra Exitosa!!", template);
+      await sendEmail(user.email, "Compra Exitosa!!", template);
+    }
 
     res.sendStatus(200);
   } catch (error) {

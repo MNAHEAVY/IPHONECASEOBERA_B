@@ -127,7 +127,6 @@ router.put("/useredit/:id", async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
-
 router.get("/users/:userId/cart", async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -164,31 +163,14 @@ router.get("/users/:userId/favs", async (req, res) => {
 
 router.post("/users/cart", async (req, res) => {
   try {
-    const {
-      userId,
-      nombre,
-      imagen,
-      stock,
-      precio,
-      color,
-      productId,
-      cantidad,
-      modelo,
-      capacidad,
-    } = req.body;
+    const { userId, product, sku, name, image, stock, price, quantity, attributes } =
+      req.body;
 
-    const newItem = {
-      product: productId,
-      name: nombre,
-      image: imagen,
-      stock,
-      color,
-      model: modelo,
-      capacidad,
-      price: precio,
-      quantity: cantidad,
-      user: userId,
-    };
+    if (!userId || !product || !sku) {
+      return res.status(400).json({
+        error: "Faltan datos obligatorios: userId, product o sku",
+      });
+    }
 
     const user = await User.findById(userId);
 
@@ -196,25 +178,38 @@ router.post("/users/cart", async (req, res) => {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
-    // Compara también el productId, además de color, modelo y capacidad
     const isProductInCart = await Cart.findOne({
       user: userId,
-      product: productId, // Se agrega para diferenciar productos con el mismo color pero diferente ID
-      color,
-      model: modelo,
-      capacidad,
+      product,
+      sku,
     });
 
     if (isProductInCart) {
       return res.status(400).json({
-        message: "El producto ya está en el carrito o una variante del mismo",
+        message: "Esa variante del producto ya está en el carrito",
       });
     }
+
+    const newItem = {
+      product,
+      sku,
+      name,
+      image,
+      stock,
+      price,
+      quantity: quantity || 1,
+      attributes: {
+        color: attributes?.color || "",
+        model: attributes?.model || "",
+        storage: attributes?.storage || "",
+      },
+      user: userId,
+    };
 
     const cart = new Cart(newItem);
     await cart.save();
 
-    user.cart.push(cart);
+    user.cart.push(cart._id);
     await user.save();
 
     res.status(200).json(cart.toObject());
@@ -228,7 +223,7 @@ router.post("/users/favs", async (req, res) => {
   try {
     const { userId, productId } = req.body;
 
-    const user = await User.findById(userId).populate("favorites"); // Populate para obtener los favoritos
+    const user = await User.findById(userId).populate("favorites");
 
     if (!user) {
       return res.status(404).json({ error: "Usuario no encontrado" });
@@ -277,7 +272,6 @@ router.delete("/users/cart/:userId/:itemId", async (req, res) => {
       return res.status(404).json({ message: "Cart item not found" });
     }
 
-    // Remove the item from the user's cart array
     await User.findByIdAndUpdate(userId, {
       $pull: { cart: itemId },
     });
@@ -303,7 +297,6 @@ router.delete("/users/favs/:userId/:itemId", async (req, res) => {
       return res.status(404).json({ message: "Favs item not found" });
     }
 
-    // Remove the item from the user's cart array
     await User.findByIdAndUpdate(userId, {
       $pull: { favorites: itemId },
     });
