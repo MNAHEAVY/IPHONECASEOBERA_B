@@ -15,7 +15,7 @@ const createPreference = async (req, res) => {
   try {
     const { items, envio, payer } = req.body;
 
-    const user = await User.findById(payer._id);
+    const user = await User.findById(payer.id);
     if (!user) {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
