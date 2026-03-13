@@ -1,7 +1,7 @@
 const mercadopago = require("mercadopago");
 const Order = require("../../models/orders");
 const User = require("../../models/users");
-const Values = require("../../src/models/values");
+const Values = require("../../models/values");
 const Product = require("../../models/products");
 const updateUserStats = require("../../utils/updateUserStats");
 
