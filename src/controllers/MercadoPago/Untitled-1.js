@@ -11,7 +11,7 @@ const { orderConfirmation } = require("../templates/template");
 mercadopago.configure({
   access_token: process.env.MP_ACCESS_TOKEN,
 });
-//
+
 const getFinalPrice = (basePrice, values) => {
   return Math.round(
     (Number(basePrice) || 0) *
@@ -21,7 +21,6 @@ const getFinalPrice = (basePrice, values) => {
   );
 };
 
-// Crea una preferencia de pago en MercadoPago
 const createPreference = async (req, res) => {
   try {
     const { items, envio, payer } = req.body;
@@ -111,6 +110,7 @@ const createPreference = async (req, res) => {
     return res.status(500).json({ error: "Error creando preferencia" });
   }
 };
+
 const mercadoPagoWebhook = async (req, res) => {
   try {
     const paymentId = req.query["data.id"];
@@ -187,12 +187,13 @@ const mercadoPagoWebhook = async (req, res) => {
       await sendEmail(user.email, "Compra Exitosa!!", template);
     }
 
-    res.sendStatus(200);
+    return res.sendStatus(200);
   } catch (error) {
     console.error(error);
-    res.sendStatus(500);
+    return res.sendStatus(500);
   }
 };
+
 module.exports = {
   createPreference,
   mercadoPagoWebhook,
