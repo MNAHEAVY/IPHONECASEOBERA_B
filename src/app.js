@@ -16,6 +16,7 @@ const ia = require("./routes/ia");
 app.use(cors({ origin: "*" }));
 app.use(morgan("dev"));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
 //Rutas
 
