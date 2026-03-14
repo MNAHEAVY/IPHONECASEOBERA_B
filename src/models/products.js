@@ -79,12 +79,15 @@ const productSchema = new Schema(
        COMPATIBILIDAD (clave para accesorios)
     ========================= */
 
-    compatibleWith: [
-      {
-        device: String,
-        type: String, // iphone, watch, mac
-      },
-    ],
+    compatibleWith: {
+      type: [
+        {
+          device: { type: String, trim: true },
+          type: { type: String, trim: true },
+        },
+      ],
+      default: [],
+    },
 
     /* =========================
        VARIANTES

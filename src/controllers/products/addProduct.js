@@ -17,11 +17,6 @@ const createProduct = async (req, res) => {
       seo = {},
     } = req.body;
 
-    console.log("BODY:", req.body);
-    console.log("compatibleWith:", compatibleWith);
-    console.log("typeof compatibleWith:", typeof compatibleWith);
-    console.log("isArray compatibleWith:", Array.isArray(compatibleWith));
-
     if (typeof compatibleWith === "string") {
       try {
         compatibleWith = JSON.parse(compatibleWith);
