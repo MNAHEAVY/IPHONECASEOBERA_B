@@ -2,7 +2,7 @@ const Products = require("../../models/products");
 
 const createProduct = async (req, res) => {
   try {
-    const {
+    let {
       name,
       slug,
       brand,
@@ -16,6 +16,38 @@ const createProduct = async (req, res) => {
       compatibleWith = [],
       seo = {},
     } = req.body;
+
+    console.log("BODY:", req.body);
+    console.log("compatibleWith:", compatibleWith);
+    console.log("typeof compatibleWith:", typeof compatibleWith);
+    console.log("isArray compatibleWith:", Array.isArray(compatibleWith));
+
+    if (typeof compatibleWith === "string") {
+      try {
+        compatibleWith = JSON.parse(compatibleWith);
+      } catch (e) {
+        console.error("Error parseando compatibleWith:", e);
+        compatibleWith = [];
+      }
+    }
+
+    if (typeof variants === "string") {
+      try {
+        variants = JSON.parse(variants);
+      } catch (e) {
+        console.error("Error parseando variants:", e);
+        variants = [];
+      }
+    }
+
+    if (typeof images === "string") {
+      try {
+        images = JSON.parse(images);
+      } catch (e) {
+        console.error("Error parseando images:", e);
+        images = [];
+      }
+    }
 
     if (!name) {
       return res.status(400).json({ message: "El campo name es obligatorio." });
