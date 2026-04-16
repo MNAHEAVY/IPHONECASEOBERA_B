@@ -1,5 +1,8 @@
 const { Router } = require("express");
-const { getSiteSettings, updateTopBarSettings } = require("../controllers/siteSettings");
+const {
+  getSiteSettings,
+  updateTopBarSettings,
+} = require("../controllers/siteSettings/siteSettings");
 
 const router = Router();
 
