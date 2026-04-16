@@ -12,6 +12,7 @@ const payment = require("./routes/paymentRoutes");
 const banners = require("./routes/banners");
 const auth = require("./routes/auth");
 const ia = require("./routes/ia");
+const siteSettingsRoutes = require("./routes/siteSettings");
 //MIDDLEWARES
 app.use(cors({ origin: "*" }));
 app.use(morgan("dev"));
@@ -20,7 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
 //Rutas
 
-//productos
+//productosconst siteSettingsRoutes = require("./src/routes/siteSettings");
 
 app.use("/", getRoutes);
 app.use("/", getUsers);
@@ -29,6 +30,7 @@ app.use("/", getValues);
 app.use("/", payment);
 app.use("/", banners);
 app.use("/", ia);
+app.use("/site-settings", siteSettingsRoutes);
 
 //users
 app.use("/auth", auth);
