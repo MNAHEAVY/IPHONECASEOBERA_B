@@ -1,4 +1,4 @@
-const SiteSettings = require("../models/siteSettings");
+const SiteSettings = require("../../models/siteSettings");
 
 const defaultSettings = {
   topBar: {
