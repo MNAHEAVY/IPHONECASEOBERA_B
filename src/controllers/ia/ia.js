@@ -66,7 +66,7 @@ const chatWithAI = async (req, res) => {
     // CONSULTA DB
     // =========================================
 
-    let productsList = await Product.find(searchQuery)
+    let productsList = await Products.find(searchQuery)
       .select("nombre precioBase stockGeneral tipo")
       .limit(10);
 
