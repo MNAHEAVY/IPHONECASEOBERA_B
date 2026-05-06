@@ -1,5 +1,5 @@
 const OpenAI = require("openai");
-
+const Products = require("../../models/products");
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -9,13 +9,80 @@ const chatWithAI = async (req, res) => {
     const userMsg = req.body.message;
 
     if (!userMsg) {
-      return res.status(400).json({ error: "Mensaje vacío" });
+      return res.status(400).json({
+        error: "Mensaje vacío",
+      });
     }
 
-    const productsRes = await fetch(
-      "https://iphonecaseoberab-production.up.railway.app/products",
+    // =========================================
+    // NORMALIZAR MENSAJE
+    // =========================================
+
+    const normalizedMsg = userMsg.toLowerCase();
+
+    // =========================================
+    // BUSCADOR INTELIGENTE
+    // =========================================
+
+    let searchQuery = {};
+
+    // Detectar modelos Apple
+    const modelMatch = normalizedMsg.match(
+      /(iphone\s?\d+|iphone\s?\d+\s?pro|max|plus|airpods|ipad|macbook|watch)/i,
     );
-    const productsList = await productsRes.json();
+
+    if (modelMatch) {
+      searchQuery.nombre = {
+        $regex: modelMatch[0],
+        $options: "i",
+      };
+    }
+
+    // Detectar fundas / cases
+    if (normalizedMsg.includes("funda") || normalizedMsg.includes("case")) {
+      searchQuery.tipo = {
+        $regex: "funda|case",
+        $options: "i",
+      };
+    }
+
+    // Detectar cargadores
+    if (normalizedMsg.includes("cargador") || normalizedMsg.includes("charger")) {
+      searchQuery.tipo = {
+        $regex: "cargador|charger",
+        $options: "i",
+      };
+    }
+
+    // Detectar vidrios
+    if (normalizedMsg.includes("vidrio") || normalizedMsg.includes("templado")) {
+      searchQuery.tipo = {
+        $regex: "vidrio|templado",
+        $options: "i",
+      };
+    }
+
+    // =========================================
+    // CONSULTA DB
+    // =========================================
+
+    let productsList = await Product.find(searchQuery)
+      .select("nombre precioBase stockGeneral tipo")
+      .limit(10);
+
+    // =========================================
+    // FALLBACK SI NO ENCUENTRA PRODUCTOS
+    // =========================================
+
+    if (productsList.length === 0) {
+      productsList = await Product.find()
+        .select("nombre precioBase stockGeneral tipo")
+        .limit(5);
+    }
+
+    // =========================================
+    // FORMATEAR CATÁLOGO
+    // =========================================
 
     const productText = productsList
       .map(
@@ -24,8 +91,14 @@ const chatWithAI = async (req, res) => {
       )
       .join("\n");
 
+    // =========================================
+    // OPENAI
+    // =========================================
+
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+      temperature: 0.7,
+
       messages: [
         {
           role: "system",
