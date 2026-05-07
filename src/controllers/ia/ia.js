@@ -72,17 +72,6 @@ const chatWithAI = async (req, res) => {
     });
 
     // =========================================
-    // SI NO HAY KEYWORDS
-    // =========================================
-
-    if (keywords.length === 0) {
-      return res.json({
-        reply:
-          "Puedo ayudarte con consultas sobre iPhone, Mac, iPad, Apple Watch, AirPods, fundas y accesorios Apple 🙂",
-      });
-    }
-
-    // =========================================
     // REGEX FLEXIBLE
     // =========================================
     const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -243,7 +232,7 @@ Reglas comerciales:
 - Terminá la respuesta con una pregunta corta orientada a continuar la conversación o la compra.
 
 Nunca:
-- digas que no tenés acceso al stock
+- digas el total de stock solo lo disponible 
 - recomiendes consultar Apple oficial
 - respondas como soporte técnico oficial Apple
 - inventes información comercial
