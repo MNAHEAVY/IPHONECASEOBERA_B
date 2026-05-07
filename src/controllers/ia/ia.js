@@ -20,10 +20,26 @@ const chatWithAI = async (req, res) => {
     // NORMALIZAR MENSAJE
     // =========================================
 
-    const normalizedMsg = userMsg.toLowerCase();
+    const normalizedMsg = userMsg.toLowerCase().trim();
 
     // =========================================
-    // KEYWORDS
+    // DETECTAR INTENCIÓN
+    // =========================================
+
+    const intents = {
+      compatibility: /(sirve|compatible|funciona|anda con|es para)/i.test(normalizedMsg),
+
+      comparison: /(mejor|comparar|diferencia|vs)/i.test(normalizedMsg),
+
+      recommendation: /(recomend|conviene|cual me aconsejas|que me aconsejas)/i.test(
+        normalizedMsg,
+      ),
+
+      price: /(precio|cuesta|sale)/i.test(normalizedMsg),
+    };
+
+    // =========================================
+    // EXTRAER KEYWORDS
     // =========================================
 
     const keywords = [];
@@ -32,18 +48,13 @@ const chatWithAI = async (req, res) => {
     // MODELOS IPHONE
     // =========================================
 
-    const modelMatch = normalizedMsg.match(
-      /(iphone\s?\d+\s?(pro|max|plus)?|\d+\s?(pro|max|plus)?)/gi,
-    );
+    const iphoneRegex = /(iphone\s?(1[1-6]|se|xr|xs)(\s?(pro|max|plus))?)/gi;
 
-    if (modelMatch) {
-      keywords.push(...modelMatch);
+    const modelMatches = normalizedMsg.match(iphoneRegex);
 
-      // Agregar versión con "iphone"
-      modelMatch.forEach((m) => {
-        if (!m.includes("iphone")) {
-          keywords.push(`iphone ${m}`);
-        }
+    if (modelMatches) {
+      modelMatches.forEach((match) => {
+        keywords.push(match.toLowerCase());
       });
     }
 
@@ -54,7 +65,7 @@ const chatWithAI = async (req, res) => {
     const keywordMap = {
       funda: ["funda", "fundas", "case"],
       cargador: ["cargador", "cargadores", "charger"],
-      vidrio: ["templado", "vidrio", "glass", "glasses"],
+      vidrio: ["templado", "vidrio", "glass"],
       airpods: ["airpods", "auriculares", "earpods"],
 
       iphone: ["iphone"],
@@ -63,141 +74,154 @@ const chatWithAI = async (req, res) => {
       watch: ["watch", "apple watch"],
     };
 
-    Object.entries(keywordMap).forEach(([_, aliases]) => {
+    Object.entries(keywordMap).forEach(([key, aliases]) => {
       aliases.forEach((alias) => {
         if (normalizedMsg.includes(alias)) {
-          keywords.push(alias);
+          keywords.push(key);
         }
       });
     });
 
+    // Eliminar duplicados
+    const uniqueKeywords = [...new Set(keywords)];
+
     // =========================================
-    // REGEX FLEXIBLE
+    // ARMAR REGEX FLEXIBLE
     // =========================================
+
     const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-    const regex = keywords.map((k) => escapeRegex(k).replace(/\s+/g, ".*")).join("|");
+    const regex = uniqueKeywords
+      .map((k) => escapeRegex(k).replace(/\s+/g, ".*"))
+      .join("|");
+
     // =========================================
     // BUSCAR PRODUCTOS
     // =========================================
 
-    let productsList = await Products.find({
-      $or: [
-        {
-          name: {
-            $regex: regex,
-            $options: "i",
-          },
-        },
+    let productsList = [];
 
-        {
-          category: {
-            $regex: regex,
-            $options: "i",
+    if (uniqueKeywords.length > 0) {
+      productsList = await Products.find({
+        $or: [
+          {
+            name: {
+              $regex: regex,
+              $options: "i",
+            },
           },
-        },
 
-        {
-          subCategory: {
-            $regex: regex,
-            $options: "i",
+          {
+            category: {
+              $regex: regex,
+              $options: "i",
+            },
           },
-        },
 
-        {
-          "compatibleWith.device": {
-            $regex: regex,
-            $options: "i",
+          {
+            subCategory: {
+              $regex: regex,
+              $options: "i",
+            },
           },
-        },
 
-        {
-          "compatibleWith.type": {
-            $regex: regex,
-            $options: "i",
+          {
+            "compatibleWith.device": {
+              $regex: regex,
+              $options: "i",
+            },
           },
-        },
 
-        {
-          "variants.attributes.model": {
-            $regex: regex,
-            $options: "i",
+          {
+            "compatibleWith.type": {
+              $regex: regex,
+              $options: "i",
+            },
           },
-        },
-      ],
-    })
-      .select(
-        `
-  name
-  basePrice
-  totalStock
-  category
-  subCategory
-  compatibleWith
-  variants
-`,
-      )
-      .limit(15);
+
+          {
+            "variants.attributes.model": {
+              $regex: regex,
+              $options: "i",
+            },
+          },
+        ],
+      })
+        .select(
+          `
+          name
+          basePrice
+          totalStock
+          category
+          subCategory
+          compatibleWith
+        `,
+        )
+        .limit(30);
+    }
 
     // =========================================
     // FALLBACK INTELIGENTE
     // =========================================
 
-    // Si no encuentra resultados,
-    // enviar más catálogo a GPT para
-    // matching semántico
     if (productsList.length === 0) {
       productsList = await Products.find()
-        .select("name priceBase stock category subCategory")
-        .limit(250);
+        .select(
+          `
+          name
+          basePrice
+          totalStock
+          category
+          subCategory
+        `,
+        )
+        .limit(40);
     }
 
     // =========================================
     // DEBUG
     // =========================================
 
+    console.log("=================================");
     console.log("USER:", userMsg);
-
-    console.log("KEYWORDS:", keywords);
+    console.log("INTENTS:", intents);
+    console.log("KEYWORDS:", uniqueKeywords);
 
     console.log(
-      "PRODUCTOS ENCONTRADOS:",
+      "PRODUCTOS:",
       productsList.map((p) => p.name),
     );
 
-    // =========================================
-    // FORMATEAR CATÁLOGO
-    // =========================================
-
-    const productText = productsList
-      .map((p) => {
-        const compatibility = p.compatibleWith
-          ?.map((c) => `${c.device} (${c.type})`)
-          .join(", ");
-
-        return `
-• ${p.name}
-
-Precio: $${p.basePrice}
-Stock: ${p.totalStock}
-Categoría: ${p.category}
-Subcategoría: ${p.subCategory}
-
-Compatibilidad:
-${compatibility || "No especificada"}
-`;
-      })
-      .join("\n\n");
+    console.log("=================================");
 
     // =========================================
-    // MENSAJES PARA OPENAI
+    // FORMATEAR CATÁLOGO PARA IA
+    // =========================================
+
+    const catalogForAI = productsList.map((p) => ({
+      name: p.name,
+      price: p.basePrice,
+      available: p.totalStock > 0 ? true : false,
+      category: p.category,
+      subCategory: p.subCategory,
+
+      compatibility:
+        p.compatibleWith?.map((c) => ({
+          device: c.device,
+          type: c.type,
+        })) || [],
+    }));
+
+    // =========================================
+    // MENSAJES
     // =========================================
 
     const conversationMessages = [
       {
         role: "system",
-        content:
-          `Sos el asistente oficial de una tienda especializada en productos Apple y accesorios tecnológicos.
+
+        content: `
+Sos el asistente oficial de una tienda especializada en productos Apple y accesorios tecnológicos.
 
 Tu personalidad:
 - Experto en Apple
@@ -205,50 +229,58 @@ Tu personalidad:
 - Claro
 - Profesional
 - Breve
-- Con tono vendedor pero natural
+- Natural
+- Comercial sin sonar agresivo
+
+Tu objetivo principal:
+Ayudar al usuario a encontrar el producto ideal y guiar naturalmente hacia la compra.
 
 Podés responder:
-- Diferencias entre modelos Apple
-- Características y especificaciones
 - Compatibilidades
-- Recomendaciones de compra
-- Consejos sobre productos Apple
-- Comparaciones entre dispositivos
-- Dudas sobre rendimiento, cámaras, batería, pantallas y uso cotidiano
+- Diferencias entre modelos Apple
+- Comparaciones
+- Recomendaciones
+- Uso cotidiano
+- Accesorios ideales
+- Rendimiento
+- Batería
+- Cámaras
+- Pantallas
 
 IMPORTANTE:
-- Para información técnica general sobre Apple, podés usar tu conocimiento general.
-- Para precios, stock y disponibilidad, usás EXCLUSIVAMENTE el catálogo enviado.
+- Para información técnica general sobre Apple podés usar conocimiento general.
+- Para precios y disponibilidad usás EXCLUSIVAMENTE el catálogo enviado.
 - Nunca inventes stock.
 - Nunca inventes precios.
-- Nunca inventes productos inexistentes.
-- Si un producto no aparece en el catálogo, indicá claramente que no encontraste disponibilidad en la tienda.
+- Nunca inventes productos.
+- Si no encontrás un producto, decilo claramente.
+- Nunca muestres estructuras internas del catálogo.
 
 Reglas comerciales:
-- Priorizá siempre los productos disponibles en la tienda.
-- Si preguntan por accesorios o fundas, sugerí productos relacionados del catálogo.
-- Explicá beneficios reales de los productos, no solo especificaciones.
-- Respondé de forma clara y natural, evitando respuestas robóticas.
-- Terminá la respuesta con una pregunta corta orientada a continuar la conversación o la compra.
+- Priorizá productos disponibles.
+- Recomendá máximo 3 productos.
+- Si hay accesorios relacionados, sugerilos naturalmente.
+- Destacá beneficios reales.
+- Respondé de forma humana.
+- Evitá respuestas robóticas.
+- Evitá párrafos largos.
+- Terminá siempre con una pregunta corta para continuar la conversación.
 
-Nunca:
-- digas el total de stock solo lo disponible 
-- recomiendes consultar Apple oficial
-- respondas como soporte técnico oficial Apple
-- inventes información comercial
-
-El catálogo enviado representa el stock real de la tienda.`.trim(),
+Información extra:
+${JSON.stringify(intents)}
+        `.trim(),
       },
 
       {
         role: "system",
-        content: `Catálogo disponible:\n${productText}`,
+        content: `
+CATALOGO DISPONIBLE:
+${JSON.stringify(catalogForAI)}
+        `,
       },
 
-      // SOLO ÚLTIMOS MENSAJES
       ...history.slice(-6).map((msg) => ({
         role: msg.role === "bot" ? "assistant" : msg.role,
-
         content: msg.content || msg.text,
       })),
 
@@ -263,8 +295,10 @@ El catálogo enviado representa el stock real de la tienda.`.trim(),
     // =========================================
 
     const aiResponse = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
+
       temperature: 0.7,
+
       messages: conversationMessages,
     });
 
@@ -272,13 +306,13 @@ El catálogo enviado representa el stock real de la tienda.`.trim(),
     // RESPONSE
     // =========================================
 
-    res.json({
+    return res.json({
       reply: aiResponse.choices[0].message.content,
     });
   } catch (error) {
-    console.error("Chat controller error:", error);
+    console.error("CHAT AI ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       error: error.message,
     });
   }
