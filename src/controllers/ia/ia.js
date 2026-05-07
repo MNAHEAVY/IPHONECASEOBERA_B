@@ -75,7 +75,7 @@ const chatWithAI = async (req, res) => {
     // =========================================
 
     if (productsList.length === 0) {
-      productsList = await Product.find()
+      productsList = await Products.find()
         .select("nombre precioBase stockGeneral tipo")
         .limit(5);
     }
