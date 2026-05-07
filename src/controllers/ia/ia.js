@@ -17,64 +17,215 @@ const chatWithAI = async (req, res) => {
     }
 
     // =========================================
-    // TRAER PRODUCTOS DESDE MONGO
-
+    // NORMALIZAR MENSAJE
     // =========================================
 
-    const productsRes = await Products.find();
-    const productsList = await productsRes.json();
+    const normalizedMsg = userMsg.toLowerCase();
+
+    // =========================================
+    // KEYWORDS
+    // =========================================
+
+    const keywords = [];
+
+    // =========================================
+    // MODELOS IPHONE
+    // =========================================
+
+    const modelMatch = normalizedMsg.match(
+      /(iphone\s?\d+\s?(pro|max|plus)?|\d+\s?(pro|max|plus)?)/gi,
+    );
+
+    if (modelMatch) {
+      keywords.push(...modelMatch);
+
+      // Agregar versión con "iphone"
+      modelMatch.forEach((m) => {
+        if (!m.includes("iphone")) {
+          keywords.push(`iphone ${m}`);
+        }
+      });
+    }
+
+    // =========================================
+    // PALABRAS CLAVE / ALIASES
+    // =========================================
+
+    const keywordMap = {
+      funda: ["funda", "fundas", "case"],
+      cargador: ["cargador", "cargadores", "charger"],
+      vidrio: ["templado", "vidrio", "glass", "glasses"],
+      airpods: ["airpods", "auriculares", "earpods"],
+
+      iphone: ["iphone"],
+      ipad: ["ipad"],
+      mac: ["mac", "macbook", "imac"],
+      watch: ["watch", "apple watch"],
+    };
+
+    Object.entries(keywordMap).forEach(([_, aliases]) => {
+      aliases.forEach((alias) => {
+        if (normalizedMsg.includes(alias)) {
+          keywords.push(alias);
+        }
+      });
+    });
+
+    // =========================================
+    // SI NO HAY KEYWORDS
+    // =========================================
+
+    if (keywords.length === 0) {
+      return res.json({
+        reply:
+          "Puedo ayudarte con consultas sobre iPhone, Mac, iPad, Apple Watch, AirPods, fundas y accesorios Apple 🙂",
+      });
+    }
+
+    // =========================================
+    // REGEX FLEXIBLE
+    // =========================================
+
+    const regex = keywords.map((k) => k.replace(/\s+/g, ".*")).join("|");
+
+    // =========================================
+    // BUSCAR PRODUCTOS
+    // =========================================
+
+    let productsList = await Products.find({
+      $or: [
+        {
+          name: {
+            $regex: regex,
+            $options: "i",
+          },
+        },
+        {
+          category: {
+            $regex: regex,
+            $options: "i",
+          },
+        },
+        {
+          subCategory: {
+            $regex: regex,
+            $options: "i",
+          },
+        },
+        {
+          compatibleWith: {
+            $regex: regex,
+            $options: "i",
+          },
+        },
+      ],
+    })
+      .select("name priceBase stock category subCategory")
+      .limit(15);
+
+    // =========================================
+    // FALLBACK INTELIGENTE
+    // =========================================
+
+    // Si no encuentra resultados,
+    // enviar más catálogo a GPT para
+    // matching semántico
+    if (productsList.length === 0) {
+      productsList = await Products.find()
+        .select("name priceBase stock category subCategory")
+        .limit(250);
+    }
+
+    // =========================================
+    // DEBUG
+    // =========================================
+
+    console.log("USER:", userMsg);
+
+    console.log("KEYWORDS:", keywords);
+
+    console.log(
+      "PRODUCTOS ENCONTRADOS:",
+      productsList.map((p) => p.name),
+    );
+
+    // =========================================
+    // FORMATEAR CATÁLOGO
+    // =========================================
 
     const productText = productsList
       .map(
         (p) =>
-          `• ${p.nombre} — $${p.precioBase} — Stock: ${p.stockGeneral} — Categoría: ${p.categoria}
- — Subcategoría: ${p.subcategoria}`,
+          `• ${p.name}
+Precio: $${p.priceBase}
+Stock: ${p.stock}
+Categoría: ${p.category}
+Subcategoría: ${p.subCategory}`,
       )
-      .join("\n");
+      .join("\n\n");
+
     // =========================================
-    // MENSAJES OPENAI
+    // MENSAJES PARA OPENAI
     // =========================================
 
     const conversationMessages = [
       {
         role: "system",
         content:
-          `Sos un asistente experto en productos Apple y en el catálogo de la empresa.
-Respondés en español, de forma clara, breve y con un tono cordial y vendedor.
+          `Sos el asistente oficial de una tienda especializada en productos Apple y accesorios tecnológicos.
 
-Cuando respondas:
-- Explicá los beneficios de los productos, no solo las especificaciones.
-- Si existe un producto del catálogo relacionado con la consulta, sugerilo.
-- Cerrá con una invitación suave a continuar (ej: “¿Querés que te recomiende una opción?”).
+Tu personalidad:
+- Experto en Apple
+- Amigable
+- Claro
+- Profesional
+- Breve
+- Con tono vendedor pero natural
 
-Podés responder consultas generales sobre productos Apple (modelos, diferencias, compatibilidad).
-Para precios, stock y disponibilidad, usás exclusivamente la información del catálogo.
+Podés responder:
+- Diferencias entre modelos Apple
+- Características y especificaciones
+- Compatibilidades
+- Recomendaciones de compra
+- Consejos sobre productos Apple
+- Comparaciones entre dispositivos
+- Dudas sobre rendimiento, cámaras, batería, pantallas y uso cotidiano
 
-Si te preguntan algo que no sea sobre Apple o productos, indicás que solo atendés consultas de Apple.
-No inventes información.
-Siempre que sea posible, cerrá la respuesta con una pregunta corta orientada a la compra.
+IMPORTANTE:
+- Para información técnica general sobre Apple, podés usar tu conocimiento general.
+- Para precios, stock y disponibilidad, usás EXCLUSIVAMENTE el catálogo enviado.
+- Nunca inventes stock.
+- Nunca inventes precios.
+- Nunca inventes productos inexistentes.
+- Si un producto no aparece en el catálogo, indicá claramente que no encontraste disponibilidad en la tienda.
 
-`.trim(),
+Reglas comerciales:
+- Priorizá siempre los productos disponibles en la tienda.
+- Si preguntan por accesorios o fundas, sugerí productos relacionados del catálogo.
+- Explicá beneficios reales de los productos, no solo especificaciones.
+- Respondé de forma clara y natural, evitando respuestas robóticas.
+- Terminá la respuesta con una pregunta corta orientada a continuar la conversación o la compra.
+
+Nunca:
+- digas que no tenés acceso al stock
+- recomiendes consultar Apple oficial
+- respondas como soporte técnico oficial Apple
+- inventes información comercial
+
+El catálogo enviado representa el stock real de la tienda.`.trim(),
       },
 
       {
         role: "system",
-        content: `CATÁLOGO DISPONIBLE:\n\n${productText}`,
+        content: `Catálogo disponible:\n${productText}`,
       },
 
-      // =========================================
-      // HISTORIAL CONVERSACIÓN
-      // =========================================
-
-      ...history.slice(-8).map((msg) => ({
+      // SOLO ÚLTIMOS MENSAJES
+      ...history.slice(-6).map((msg) => ({
         role: msg.role === "bot" ? "assistant" : msg.role,
 
         content: msg.content || msg.text,
       })),
-
-      // =========================================
-      // MENSAJE ACTUAL
-      // =========================================
 
       {
         role: "user",
@@ -88,6 +239,7 @@ Siempre que sea posible, cerrá la respuesta con una pregunta corta orientada a 
 
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+      temperature: 0.7,
       messages: conversationMessages,
     });
 
