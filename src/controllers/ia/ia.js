@@ -1,5 +1,6 @@
 const OpenAI = require("openai");
 const Products = require("../../models/products");
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -7,6 +8,7 @@ const openai = new OpenAI({
 const chatWithAI = async (req, res) => {
   try {
     const userMsg = req.body.message;
+    const history = req.body.history || [];
 
     if (!userMsg) {
       return res.status(400).json({
@@ -21,43 +23,49 @@ const chatWithAI = async (req, res) => {
     const normalizedMsg = userMsg.toLowerCase();
 
     // =========================================
-    // BUSCADOR INTELIGENTE
+    // DETECTAR CATEGORÍA
     // =========================================
 
-    let searchQuery = {};
+    let categoria = null;
 
-    // Detectar modelos Apple
-    const modelMatch = normalizedMsg.match(
-      /(iphone\s?\d+|iphone\s?\d+\s?pro|max|plus|airpods|ipad|macbook|watch)/i,
-    );
+    if (normalizedMsg.includes("funda") || normalizedMsg.includes("case")) {
+      categoria = "fundas";
+    }
+
+    if (normalizedMsg.includes("cargador") || normalizedMsg.includes("charger")) {
+      categoria = "cargadores";
+    }
+
+    if (normalizedMsg.includes("templado") || normalizedMsg.includes("vidrio")) {
+      categoria = "vidrios";
+    }
+
+    if (normalizedMsg.includes("airpods") || normalizedMsg.includes("auriculares")) {
+      categoria = "auriculares";
+    }
+
+    // =========================================
+    // DETECTAR MODELO
+    // =========================================
+
+    const modelMatch = normalizedMsg.match(/(iphone\s?\d+\s?(pro|max|plus)?)/i);
+
+    // =========================================
+    // QUERY DINÁMICA
+    // =========================================
+
+    const query = {};
+
+    if (categoria) {
+      query.categoria = {
+        $regex: categoria,
+        $options: "i",
+      };
+    }
 
     if (modelMatch) {
-      searchQuery.nombre = {
+      query.nombre = {
         $regex: modelMatch[0],
-        $options: "i",
-      };
-    }
-
-    // Detectar fundas / cases
-    if (normalizedMsg.includes("funda") || normalizedMsg.includes("case")) {
-      searchQuery.tipo = {
-        $regex: "funda|case",
-        $options: "i",
-      };
-    }
-
-    // Detectar cargadores
-    if (normalizedMsg.includes("cargador") || normalizedMsg.includes("charger")) {
-      searchQuery.tipo = {
-        $regex: "cargador|charger",
-        $options: "i",
-      };
-    }
-
-    // Detectar vidrios
-    if (normalizedMsg.includes("vidrio") || normalizedMsg.includes("templado")) {
-      searchQuery.tipo = {
-        $regex: "vidrio|templado",
         $options: "i",
       };
     }
@@ -66,17 +74,17 @@ const chatWithAI = async (req, res) => {
     // CONSULTA DB
     // =========================================
 
-    let productsList = await Products.find(searchQuery)
-      .select("nombre precioBase stockGeneral tipo")
+    let productsList = await Products.find(query)
+      .select("nombre precioBase stockGeneral categoria subcategoria")
       .limit(10);
 
     // =========================================
-    // FALLBACK SI NO ENCUENTRA PRODUCTOS
+    // FALLBACK
     // =========================================
 
     if (productsList.length === 0) {
       productsList = await Products.find()
-        .select("nombre precioBase stockGeneral tipo")
+        .select("nombre precioBase stockGeneral categoria subcategoria")
         .limit(5);
     }
 
@@ -87,9 +95,54 @@ const chatWithAI = async (req, res) => {
     const productText = productsList
       .map(
         (p) =>
-          `• ${p.nombre} — $${p.precioBase} — Stock: ${p.stockGeneral} — Tipo: ${p.tipo}`,
+          `• ${p.nombre} — $${p.precioBase} — Stock: ${p.stockGeneral} — Categoría: ${p.categoria}`,
       )
       .join("\n");
+
+    // =========================================
+    // HISTORIAL
+    // =========================================
+
+    const conversationMessages = [
+      {
+        role: "system",
+        content: `
+Sos un asistente experto en productos Apple y en el catálogo de la empresa.
+
+Respondés:
+- En español
+- De forma clara
+- Breve
+- Con tono cordial y vendedor
+
+Reglas:
+- Explicá beneficios, no solo especificaciones.
+- Si existe un producto relacionado en catálogo, sugerilo.
+- Cerrá con una pregunta corta orientada a la compra.
+- Podés responder consultas generales sobre Apple.
+- Para precios y stock usás SOLO la información del catálogo.
+- Si preguntan algo fuera de Apple o tecnología, indicás que solo atendés consultas Apple.
+- No inventes productos, precios ni stock.
+`.trim(),
+      },
+
+      {
+        role: "system",
+        content: `Catálogo disponible:\n${productText}`,
+      },
+
+      // SOLO ÚLTIMOS MENSAJES
+      ...history.slice(-6).map((msg) => ({
+        role: msg.role === "bot" ? "assistant" : msg.role,
+
+        content: msg.content || msg.text,
+      })),
+
+      {
+        role: "user",
+        content: userMsg,
+      },
+    ];
 
     // =========================================
     // OPENAI
@@ -98,47 +151,25 @@ const chatWithAI = async (req, res) => {
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.7,
-
-      messages: [
-        {
-          role: "system",
-          content:
-            `Sos un asistente experto en productos Apple y en el catálogo de la empresa.
-Respondés en español, de forma clara, breve y con un tono cordial y vendedor.
-
-Cuando respondas:
-- Explicá los beneficios de los productos, no solo las especificaciones.
-- Si existe un producto del catálogo relacionado con la consulta, sugerilo.
-- Cerrá con una invitación suave a continuar (ej: “¿Querés que te recomiende una opción?”).
-
-Podés responder consultas generales sobre productos Apple (modelos, diferencias, compatibilidad).
-Para precios, stock y disponibilidad, usás exclusivamente la información del catálogo.
-
-Si te preguntan algo que no sea sobre Apple o productos, indicás que solo atendés consultas de Apple.
-No inventes información.
-Siempre que sea posible, cerrá la respuesta con una pregunta corta orientada a la compra.
-
-`.trim(),
-        },
-
-        {
-          role: "system",
-          content: `Catálogo disponible:\n${productText}`,
-        },
-        {
-          role: "user",
-          content: userMsg,
-        },
-      ],
+      messages: conversationMessages,
     });
+
+    // =========================================
+    // RESPONSE
+    // =========================================
 
     res.json({
       reply: aiResponse.choices[0].message.content,
     });
   } catch (error) {
     console.error("Chat controller error:", error);
-    res.status(500).json({ error: "Error en el servidor" });
+
+    res.status(500).json({
+      error: error.message,
+    });
   }
 };
 
-module.exports = { chatWithAI };
+module.exports = {
+  chatWithAI,
+};
