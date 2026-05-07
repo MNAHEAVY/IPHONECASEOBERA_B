@@ -18,27 +18,18 @@ const chatWithAI = async (req, res) => {
 
     // =========================================
     // TRAER PRODUCTOS DESDE MONGO
-    // =========================================
-
-    const productsList = await Products.find()
-      .select("nombre precioBase stockGeneral categoria subcategoria")
-      .limit(250);
 
     // =========================================
-    // FORMATEAR CATÁLOGO
-    // =========================================
+
+    const productsList = await Products.find();
 
     const productText = productsList
       .map(
         (p) =>
-          `• ${p.nombre}
-Precio: $${p.precioBase}
-Stock: ${p.stockGeneral}
-Categoría: ${p.categoria}
-Subcategoría: ${p.subcategoria}`,
+          `• ${p.nombre} — $${p.precioBase} — Stock: ${p.stockGeneral} — Categoría: ${p.categoria}
+ — Subcategoría: ${p.subcategoria}`,
       )
-      .join("\n\n");
-
+      .join("\n");
     // =========================================
     // MENSAJES OPENAI
     // =========================================
@@ -46,29 +37,22 @@ Subcategoría: ${p.subcategoria}`,
     const conversationMessages = [
       {
         role: "system",
-        content: `
-Sos el asistente oficial de una tienda especializada en productos Apple.
+        content:
+          `Sos un asistente experto en productos Apple y en el catálogo de la empresa.
+Respondés en español, de forma clara, breve y con un tono cordial y vendedor.
 
-Tu trabajo es responder utilizando EXCLUSIVAMENTE la información del catálogo enviado.
+Cuando respondas:
+- Explicá los beneficios de los productos, no solo las especificaciones.
+- Si existe un producto del catálogo relacionado con la consulta, sugerilo.
+- Cerrá con una invitación suave a continuar (ej: “¿Querés que te recomiende una opción?”).
 
-Reglas IMPORTANTES:
-- Nunca inventes productos.
-- Nunca inventes precios.
-- Nunca inventes stock.
-- Si un producto aparece en el catálogo, asumí que está disponible.
-- Si un producto NO aparece en catálogo, decí claramente que no lo encontraste en la tienda.
-- Priorizá SIEMPRE los productos del catálogo.
-- Respondé en español.
-- Respondé breve, claro y con tono vendedor.
-- Explicá beneficios de los productos.
-- Si preguntan por accesorios o fundas, sugerí productos relacionados del catálogo.
-- Terminá la respuesta con una pregunta corta orientada a la compra.
-- Nunca respondas como soporte oficial Apple.
-- Nunca recomiendes consultar Apple oficial.
-- Nunca digas que no tenés acceso al stock.
+Podés responder consultas generales sobre productos Apple (modelos, diferencias, compatibilidad).
+Para precios, stock y disponibilidad, usás exclusivamente la información del catálogo.
 
-IMPORTANTE:
-El catálogo enviado ES el stock real de la tienda.
+Si te preguntan algo que no sea sobre Apple o productos, indicás que solo atendés consultas de Apple.
+No inventes información.
+Siempre que sea posible, cerrá la respuesta con una pregunta corta orientada a la compra.
+
 `.trim(),
       },
 
