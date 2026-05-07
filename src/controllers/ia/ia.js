@@ -23,46 +23,73 @@ const chatWithAI = async (req, res) => {
     const normalizedMsg = userMsg.toLowerCase();
 
     // =========================================
-    // EXTRAER PALABRAS CLAVE
+    // KEYWORDS
     // =========================================
 
     const keywords = [];
 
-    // MODELOS
+    // =========================================
+    // MODELOS IPHONE
+    // =========================================
+
     const modelMatch = normalizedMsg.match(
       /(iphone\s?\d+\s?(pro|max|plus)?|\d+\s?(pro|max|plus)?)/gi,
     );
 
     if (modelMatch) {
       keywords.push(...modelMatch);
+
+      // Agregar versión con "iphone"
+      modelMatch.forEach((m) => {
+        if (!m.includes("iphone")) {
+          keywords.push(`iphone ${m}`);
+        }
+      });
     }
 
-    // ACCESORIOS
-    const accessoryWords = [
-      "funda",
-      "fundas",
-      "case",
-      "cargador",
-      "templado",
-      "vidrio",
-      "airpods",
-      "auriculares",
-    ];
+    // =========================================
+    // PALABRAS CLAVE / ALIASES
+    // =========================================
 
-    accessoryWords.forEach((word) => {
-      if (normalizedMsg.includes(word)) {
-        keywords.push(word);
-      }
+    const keywordMap = {
+      funda: ["funda", "fundas", "case"],
+      cargador: ["cargador", "cargadores", "charger"],
+      vidrio: ["templado", "vidrio", "glass", "glasses"],
+      airpods: ["airpods", "auriculares", "earpods"],
+
+      iphone: ["iphone"],
+      ipad: ["ipad"],
+      mac: ["mac", "macbook", "imac"],
+      watch: ["watch", "apple watch"],
+    };
+
+    Object.entries(keywordMap).forEach(([_, aliases]) => {
+      aliases.forEach((alias) => {
+        if (normalizedMsg.includes(alias)) {
+          keywords.push(alias);
+        }
+      });
     });
 
     // =========================================
-    // CREAR REGEX GLOBAL
+    // SI NO HAY KEYWORDS
     // =========================================
 
-    const regex = keywords.join("|");
+    if (keywords.length === 0) {
+      return res.json({
+        reply:
+          "Puedo ayudarte con consultas sobre iPhone, Mac, iPad, Apple Watch, AirPods, fundas y accesorios Apple 🙂",
+      });
+    }
 
     // =========================================
-    // QUERY FLEXIBLE
+    // REGEX FLEXIBLE
+    // =========================================
+
+    const regex = keywords.map((k) => k.replace(/\s+/g, ".*")).join("|");
+
+    // =========================================
+    // BUSCAR PRODUCTOS
     // =========================================
 
     let productsList = await Products.find({
@@ -88,17 +115,33 @@ const chatWithAI = async (req, res) => {
       ],
     })
       .select("nombre precioBase stockGeneral categoria subcategoria")
-      .limit(10);
+      .limit(15);
 
     // =========================================
-    // FALLBACK
+    // FALLBACK INTELIGENTE
     // =========================================
 
+    // Si no encuentra resultados,
+    // enviar más catálogo a GPT para
+    // matching semántico
     if (productsList.length === 0) {
       productsList = await Products.find()
         .select("nombre precioBase stockGeneral categoria subcategoria")
-        .limit(5);
+        .limit(250);
     }
+
+    // =========================================
+    // DEBUG
+    // =========================================
+
+    console.log("USER:", userMsg);
+
+    console.log("KEYWORDS:", keywords);
+
+    console.log(
+      "PRODUCTOS ENCONTRADOS:",
+      productsList.map((p) => p.nombre),
+    );
 
     // =========================================
     // FORMATEAR CATÁLOGO
@@ -107,12 +150,16 @@ const chatWithAI = async (req, res) => {
     const productText = productsList
       .map(
         (p) =>
-          `• ${p.nombre} — $${p.precioBase} — Stock: ${p.stockGeneral} — Categoría: ${p.categoria}`,
+          `• ${p.nombre}
+Precio: $${p.precioBase}
+Stock: ${p.stockGeneral}
+Categoría: ${p.categoria}
+Subcategoría: ${p.subcategoria}`,
       )
-      .join("\n");
+      .join("\n\n");
 
     // =========================================
-    // HISTORIAL
+    // MENSAJES PARA OPENAI
     // =========================================
 
     const conversationMessages = [
