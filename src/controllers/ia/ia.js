@@ -21,7 +21,8 @@ const chatWithAI = async (req, res) => {
 
     // =========================================
 
-    const productsList = await Products.find();
+    const productsRes = await Products.find();
+    const productsList = await productsRes.json();
 
     const productText = productsList
       .map(
@@ -87,7 +88,6 @@ Siempre que sea posible, cerrá la respuesta con una pregunta corta orientada a 
 
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: 0.7,
       messages: conversationMessages,
     });
 
