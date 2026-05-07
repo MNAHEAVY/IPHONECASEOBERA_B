@@ -112,12 +112,6 @@ const chatWithAI = async (req, res) => {
             $options: "i",
           },
         },
-        {
-          compatibleWith: {
-            $regex: regex,
-            $options: "i",
-          },
-        },
       ],
     })
       .select("name priceBase stock category subCategory")
