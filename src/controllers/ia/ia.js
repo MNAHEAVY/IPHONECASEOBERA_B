@@ -91,14 +91,6 @@ const chatWithAI = async (req, res) => {
       .limit(10);
 
     // =========================================
-    // CONSULTA DB
-    // =========================================
-
-    let productsList = await Products.find(query)
-      .select("nombre precioBase stockGeneral categoria subcategoria")
-      .limit(10);
-
-    // =========================================
     // FALLBACK
     // =========================================
 
