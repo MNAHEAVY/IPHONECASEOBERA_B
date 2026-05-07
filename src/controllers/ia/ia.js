@@ -85,9 +85,9 @@ const chatWithAI = async (req, res) => {
     // =========================================
     // REGEX FLEXIBLE
     // =========================================
+    const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-    const regex = keywords.map((k) => k.replace(/\s+/g, ".*")).join("|");
-
+    const regex = keywords.map((k) => escapeRegex(k).replace(/\s+/g, ".*")).join("|");
     // =========================================
     // BUSCAR PRODUCTOS
     // =========================================
@@ -100,21 +100,54 @@ const chatWithAI = async (req, res) => {
             $options: "i",
           },
         },
+
         {
           category: {
             $regex: regex,
             $options: "i",
           },
         },
+
         {
           subCategory: {
             $regex: regex,
             $options: "i",
           },
         },
+
+        {
+          "compatibleWith.device": {
+            $regex: regex,
+            $options: "i",
+          },
+        },
+
+        {
+          "compatibleWith.type": {
+            $regex: regex,
+            $options: "i",
+          },
+        },
+
+        {
+          "variants.attributes.model": {
+            $regex: regex,
+            $options: "i",
+          },
+        },
       ],
     })
-      .select("name priceBase stock category subCategory")
+      .select(
+        `
+  name
+  basePrice
+  totalStock
+  category
+  subCategory
+  compatibleWith
+  variants
+`,
+      )
       .limit(15);
 
     // =========================================
@@ -148,14 +181,23 @@ const chatWithAI = async (req, res) => {
     // =========================================
 
     const productText = productsList
-      .map(
-        (p) =>
-          `• ${p.name}
-Precio: $${p.priceBase}
-Stock: ${p.stock}
+      .map((p) => {
+        const compatibility = p.compatibleWith
+          ?.map((c) => `${c.device} (${c.type})`)
+          .join(", ");
+
+        return `
+• ${p.name}
+
+Precio: $${p.basePrice}
+Stock: ${p.totalStock}
 Categoría: ${p.category}
-Subcategoría: ${p.subCategory}`,
-      )
+Subcategoría: ${p.subCategory}
+
+Compatibilidad:
+${compatibility || "No especificada"}
+`;
+      })
       .join("\n\n");
 
     // =========================================
