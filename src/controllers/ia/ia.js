@@ -23,52 +23,72 @@ const chatWithAI = async (req, res) => {
     const normalizedMsg = userMsg.toLowerCase();
 
     // =========================================
-    // DETECTAR CATEGORÍA
+    // EXTRAER PALABRAS CLAVE
     // =========================================
 
-    let categoria = null;
+    const keywords = [];
 
-    if (normalizedMsg.includes("funda") || normalizedMsg.includes("case")) {
-      categoria = "fundas";
-    }
-
-    if (normalizedMsg.includes("cargador") || normalizedMsg.includes("charger")) {
-      categoria = "cargadores";
-    }
-
-    if (normalizedMsg.includes("templado") || normalizedMsg.includes("vidrio")) {
-      categoria = "vidrios";
-    }
-
-    if (normalizedMsg.includes("airpods") || normalizedMsg.includes("auriculares")) {
-      categoria = "auriculares";
-    }
-
-    // =========================================
-    // DETECTAR MODELO
-    // =========================================
-
-    const modelMatch = normalizedMsg.match(/(iphone\s?\d+\s?(pro|max|plus)?)/i);
-
-    // =========================================
-    // QUERY DINÁMICA
-    // =========================================
-
-    const query = {};
-
-    if (categoria) {
-      query.categoria = {
-        $regex: categoria,
-        $options: "i",
-      };
-    }
+    // MODELOS
+    const modelMatch = normalizedMsg.match(
+      /(iphone\s?\d+\s?(pro|max|plus)?|\d+\s?(pro|max|plus)?)/gi,
+    );
 
     if (modelMatch) {
-      query.nombre = {
-        $regex: modelMatch[0],
-        $options: "i",
-      };
+      keywords.push(...modelMatch);
     }
+
+    // ACCESORIOS
+    const accessoryWords = [
+      "funda",
+      "fundas",
+      "case",
+      "cargador",
+      "templado",
+      "vidrio",
+      "airpods",
+      "auriculares",
+    ];
+
+    accessoryWords.forEach((word) => {
+      if (normalizedMsg.includes(word)) {
+        keywords.push(word);
+      }
+    });
+
+    // =========================================
+    // CREAR REGEX GLOBAL
+    // =========================================
+
+    const regex = keywords.join("|");
+
+    // =========================================
+    // QUERY FLEXIBLE
+    // =========================================
+
+    let productsList = await Products.find({
+      $or: [
+        {
+          nombre: {
+            $regex: regex,
+            $options: "i",
+          },
+        },
+        {
+          categoria: {
+            $regex: regex,
+            $options: "i",
+          },
+        },
+        {
+          subcategoria: {
+            $regex: regex,
+            $options: "i",
+          },
+        },
+      ],
+    })
+      .select("nombre precioBase stockGeneral categoria subcategoria")
+      .limit(10);
 
     // =========================================
     // CONSULTA DB
@@ -106,24 +126,28 @@ const chatWithAI = async (req, res) => {
     const conversationMessages = [
       {
         role: "system",
-        content: `
-Sos un asistente experto en productos Apple y en el catálogo de la empresa.
+        content: `Sos el asistente oficial de una tienda especializada en productos Apple.
 
-Respondés:
-- En español
-- De forma clara
-- Breve
-- Con tono cordial y vendedor
+Tu función principal es responder usando EXCLUSIVAMENTE la información del catálogo enviado.
 
-Reglas:
-- Explicá beneficios, no solo especificaciones.
-- Si existe un producto relacionado en catálogo, sugerilo.
-- Cerrá con una pregunta corta orientada a la compra.
-- Podés responder consultas generales sobre Apple.
-- Para precios y stock usás SOLO la información del catálogo.
-- Si preguntan algo fuera de Apple o tecnología, indicás que solo atendés consultas Apple.
-- No inventes productos, precios ni stock.
-`.trim(),
+Reglas IMPORTANTES:
+- Nunca inventes stock.
+- Nunca inventes productos.
+- Nunca inventes precios.
+- Si un producto no aparece en el catálogo, decí claramente que no encontraste disponibilidad en la tienda.
+- No respondas como Wikipedia o como soporte oficial de Apple.
+- Priorizá SIEMPRE los productos de la tienda.
+- Si preguntan por stock, respondé usando el catálogo.
+- Si preguntan por fundas o accesorios, buscá productos relacionados en catálogo.
+- Respondé breve, claro y con tono vendedor.
+- Terminá con una pregunta corta orientada a la compra.
+
+Si no existe información suficiente en el catálogo:
+"Actualmente no encontré ese producto en el catálogo de la tienda."
+
+Nunca recomiendes consultar Apple oficial.
+Nunca digas que no tenés acceso al stock.
+El stock disponible ES el enviado en el catálogo.`.trim(),
       },
 
       {
