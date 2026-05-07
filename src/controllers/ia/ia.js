@@ -17,131 +17,12 @@ const chatWithAI = async (req, res) => {
     }
 
     // =========================================
-    // NORMALIZAR MENSAJE
+    // TRAER PRODUCTOS DESDE MONGO
     // =========================================
 
-    const normalizedMsg = userMsg.toLowerCase();
-
-    // =========================================
-    // KEYWORDS
-    // =========================================
-
-    const keywords = [];
-
-    // =========================================
-    // MODELOS IPHONE
-    // =========================================
-
-    const modelMatch = normalizedMsg.match(
-      /(iphone\s?\d+\s?(pro|max|plus)?|\d+\s?(pro|max|plus)?)/gi,
-    );
-
-    if (modelMatch) {
-      keywords.push(...modelMatch);
-
-      // Agregar versión con "iphone"
-      modelMatch.forEach((m) => {
-        if (!m.includes("iphone")) {
-          keywords.push(`iphone ${m}`);
-        }
-      });
-    }
-
-    // =========================================
-    // PALABRAS CLAVE / ALIASES
-    // =========================================
-
-    const keywordMap = {
-      funda: ["funda", "fundas", "case"],
-      cargador: ["cargador", "cargadores", "charger"],
-      vidrio: ["templado", "vidrio", "glass", "glasses"],
-      airpods: ["airpods", "auriculares", "earpods"],
-
-      iphone: ["iphone"],
-      ipad: ["ipad"],
-      mac: ["mac", "macbook", "imac"],
-      watch: ["watch", "apple watch"],
-    };
-
-    Object.entries(keywordMap).forEach(([_, aliases]) => {
-      aliases.forEach((alias) => {
-        if (normalizedMsg.includes(alias)) {
-          keywords.push(alias);
-        }
-      });
-    });
-
-    // =========================================
-    // SI NO HAY KEYWORDS
-    // =========================================
-
-    if (keywords.length === 0) {
-      return res.json({
-        reply:
-          "Puedo ayudarte con consultas sobre iPhone, Mac, iPad, Apple Watch, AirPods, fundas y accesorios Apple 🙂",
-      });
-    }
-
-    // =========================================
-    // REGEX FLEXIBLE
-    // =========================================
-
-    const regex = keywords.map((k) => k.replace(/\s+/g, ".*")).join("|");
-
-    // =========================================
-    // BUSCAR PRODUCTOS
-    // =========================================
-
-    let productsList = await Products.find({
-      $or: [
-        {
-          nombre: {
-            $regex: regex,
-            $options: "i",
-          },
-        },
-        {
-          categoria: {
-            $regex: regex,
-            $options: "i",
-          },
-        },
-        {
-          subcategoria: {
-            $regex: regex,
-            $options: "i",
-          },
-        },
-      ],
-    })
+    const productsList = await Products.find()
       .select("nombre precioBase stockGeneral categoria subcategoria")
-      .limit(15);
-
-    // =========================================
-    // FALLBACK INTELIGENTE
-    // =========================================
-
-    // Si no encuentra resultados,
-    // enviar más catálogo a GPT para
-    // matching semántico
-    if (productsList.length === 0) {
-      productsList = await Products.find()
-        .select("nombre precioBase stockGeneral categoria subcategoria")
-        .limit(250);
-    }
-
-    // =========================================
-    // DEBUG
-    // =========================================
-
-    console.log("USER:", userMsg);
-
-    console.log("KEYWORDS:", keywords);
-
-    console.log(
-      "PRODUCTOS ENCONTRADOS:",
-      productsList.map((p) => p.nombre),
-    );
+      .limit(250);
 
     // =========================================
     // FORMATEAR CATÁLOGO
@@ -159,47 +40,56 @@ Subcategoría: ${p.subcategoria}`,
       .join("\n\n");
 
     // =========================================
-    // MENSAJES PARA OPENAI
+    // MENSAJES OPENAI
     // =========================================
 
     const conversationMessages = [
       {
         role: "system",
-        content: `Sos el asistente oficial de una tienda especializada en productos Apple.
+        content: `
+Sos el asistente oficial de una tienda especializada en productos Apple.
 
-Tu función principal es responder usando EXCLUSIVAMENTE la información del catálogo enviado.
+Tu trabajo es responder utilizando EXCLUSIVAMENTE la información del catálogo enviado.
 
 Reglas IMPORTANTES:
-- Nunca inventes stock.
 - Nunca inventes productos.
 - Nunca inventes precios.
-- Si un producto no aparece en el catálogo, decí claramente que no encontraste disponibilidad en la tienda.
-- No respondas como Wikipedia o como soporte oficial de Apple.
-- Priorizá SIEMPRE los productos de la tienda.
-- Si preguntan por stock, respondé usando el catálogo.
-- Si preguntan por fundas o accesorios, buscá productos relacionados en catálogo.
+- Nunca inventes stock.
+- Si un producto aparece en el catálogo, asumí que está disponible.
+- Si un producto NO aparece en catálogo, decí claramente que no lo encontraste en la tienda.
+- Priorizá SIEMPRE los productos del catálogo.
+- Respondé en español.
 - Respondé breve, claro y con tono vendedor.
-- Terminá con una pregunta corta orientada a la compra.
+- Explicá beneficios de los productos.
+- Si preguntan por accesorios o fundas, sugerí productos relacionados del catálogo.
+- Terminá la respuesta con una pregunta corta orientada a la compra.
+- Nunca respondas como soporte oficial Apple.
+- Nunca recomiendes consultar Apple oficial.
+- Nunca digas que no tenés acceso al stock.
 
-Si no existe información suficiente en el catálogo:
-"Actualmente no encontré ese producto en el catálogo de la tienda."
-
-Nunca recomiendes consultar Apple oficial.
-Nunca digas que no tenés acceso al stock.
-El stock disponible ES el enviado en el catálogo.`.trim(),
+IMPORTANTE:
+El catálogo enviado ES el stock real de la tienda.
+`.trim(),
       },
 
       {
         role: "system",
-        content: `Catálogo disponible:\n${productText}`,
+        content: `CATÁLOGO DISPONIBLE:\n\n${productText}`,
       },
 
-      // SOLO ÚLTIMOS MENSAJES
-      ...history.slice(-6).map((msg) => ({
+      // =========================================
+      // HISTORIAL CONVERSACIÓN
+      // =========================================
+
+      ...history.slice(-8).map((msg) => ({
         role: msg.role === "bot" ? "assistant" : msg.role,
 
         content: msg.content || msg.text,
       })),
+
+      // =========================================
+      // MENSAJE ACTUAL
+      // =========================================
 
       {
         role: "user",
