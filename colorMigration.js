@@ -3,7 +3,7 @@ require("dotenv").config();
 const mongoose = require("mongoose");
 const Products = require("./src/models/products");
 
-const { resolveColorKey } = require("../utils/colors");
+const { resolveColorKey } = require("./src/utils/colors");
 
 async function migrate() {
   try {
