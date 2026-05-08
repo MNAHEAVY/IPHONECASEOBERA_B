@@ -22,7 +22,13 @@ const variantSchema = new Schema({
   },
 
   attributes: {
+    // LEGACY
     color: String,
+
+    // NUEVO
+    colorKey: String,
+    colorLabel: String,
+
     storage: String,
     model: String,
     size: String,
@@ -136,6 +142,36 @@ AUTO CALCULAR STOCK TOTAL
 ========================= */
 
 productSchema.pre("save", function (next) {
+  // =========================
+  // MIGRACIÓN AUTOMÁTICA DE COLORES
+  // =========================
+
+  this.variants = this.variants.map((variant) => {
+    if (!variant.attributes) {
+      variant.attributes = {};
+    }
+
+    // si ya tiene colorKey y colorLabel no hacemos nada
+    if (variant.attributes.colorKey && variant.attributes.colorLabel) {
+      return variant;
+    }
+
+    // tomamos el color viejo
+    const legacyColor = variant.attributes.color || "";
+
+    // generamos el colorKey automáticamente
+    variant.attributes.colorKey = resolveColorKey(legacyColor);
+
+    // guardamos el nombre visible
+    variant.attributes.colorLabel = legacyColor || variant.attributes.colorKey;
+
+    return variant;
+  });
+
+  // =========================
+  // STOCK TOTAL
+  // =========================
+
   const total = this.variants.reduce((acc, v) => acc + v.stock, 0);
 
   this.totalStock = total;
