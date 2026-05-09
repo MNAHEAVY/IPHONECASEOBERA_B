@@ -40,7 +40,8 @@ const updateProduct = async (req, res) => {
         available: stock > 0,
         images: variant.images || [],
         attributes: {
-          color: variant.attributes?.color || "",
+          colorLabel: variant.attributes?.colorLabel || "",
+          colorKey: variant.attributes?.colorKey || "",
           model: variant.attributes?.model || "",
           storage: variant.attributes?.storage || "",
           size: variant.attributes?.size || "",
