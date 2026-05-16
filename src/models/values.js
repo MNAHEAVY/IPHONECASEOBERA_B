@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 const { Schema, model } = require("mongoose");
 
 const valuesSchema = new mongoose.Schema({
-  dolarBlue: { type: Number },
-  costoGeneral: { type: Number },
+  dolar: { type: Number },
+  margen: { type: Number },
   flete: { type: Number },
   profit: { type: Number },
   obercoins: { type: Number },
@@ -11,7 +11,7 @@ const valuesSchema = new mongoose.Schema({
   costosGeneralIphone: { type: Number },
   profitIphone: { type: Object },
   comision: { type: Number },
-  tasa: { type: Number },
+  iva: { type: Number },
   mp: { type: Number },
   rentas: { type: Number },
 });
