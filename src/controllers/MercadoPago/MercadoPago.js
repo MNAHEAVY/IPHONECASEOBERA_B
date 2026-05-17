@@ -13,12 +13,25 @@ mercadopago.configure({
 });
 //
 const getFinalPrice = (basePrice, values) => {
-  return Math.round(
-    (Number(basePrice) || 0) *
-      (Number(values.dolarBlue) || 1) *
-      (Number(values.profit) || 1) *
-      (Number(values.mp) || 1),
-  );
+  const base = Number(basePrice) || 0;
+  const dolar = Number(values.dolar) || 1;
+
+  // 1. Precio base en ARS
+  const precioARS = base * dolar;
+
+  // 2. Margen
+  const margen = precioARS / (Number(values.margen) || 1);
+
+  // 3. IVA
+  const iva = margen / (Number(values.iva) || 1);
+
+  // 4. Rentas
+  const rentas = iva / (Number(values.rentas) || 1);
+
+  // 5. Mercado Pago
+  const final = rentas / (Number(values.mp) || 1);
+
+  return Math.round(final);
 };
 
 // Crea una preferencia de pago en MercadoPago
@@ -82,10 +95,10 @@ const createPreference = async (req, res) => {
     });
 
     const preference = await mercadopago.preferences.create({
-      items: normalizedItems.map((item) => ({
-        title: item.name,
-        unit_price: item.price,
-        quantity: item.quantity,
+      items: normalizedItems.map((items) => ({
+        title: items.name,
+        unit_price: items.price,
+        quantity: items.quantity,
         currency_id: "ARS",
       })),
       payer: {
