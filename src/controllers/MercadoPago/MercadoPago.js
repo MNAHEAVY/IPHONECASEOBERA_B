@@ -211,7 +211,7 @@
 //   mercadoPagoWebhook,
 // };
 
-const mercadopago = require("mercadopago");
+const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 const mongoose = require("mongoose");
 const Order = require("../../models/orders");
 const User = require("../../models/users");
@@ -223,11 +223,11 @@ const { sendEmail } = require("../nodemailer/nodemailer");
 const { orderConfirmation } = require("../templates/template");
 
 // Configuración del nuevo SDK v2 de Mercado Pago
-mercadopago.configure({
-  access_token: process.env.MP_ACCESS_TOKEN,
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN,
 });
-const preferenceClient = new Preference(mercadopago);
-const paymentClient = new Payment(mercadopago);
+const preferenceClient = new Preference(client);
+const paymentClient = new Payment(client);
 
 // Helper de cálculo de precio final optimizado
 const getFinalPrice = (basePrice, values) => {
