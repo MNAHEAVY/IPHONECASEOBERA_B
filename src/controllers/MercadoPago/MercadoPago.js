@@ -93,7 +93,15 @@ const createPreference = async (req, res) => {
       },
       status: "pending",
     });
-
+    console.log({
+      basePrice,
+      finalUnitPrice,
+      values,
+    });
+    console.log("MP ITEM:", {
+      title: item.name,
+      unit_price: item.price,
+    });
     const preference = await mercadopago.preferences.create({
       items: normalizedItems.map((items) => ({
         title: items.name,
