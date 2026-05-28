@@ -5,6 +5,7 @@ const valuesSchema = new mongoose.Schema({
   dolar: { type: Number },
   margen: { type: Number },
   flete: { type: Number },
+  fleteLocal: { type: Number },
   obercoins: { type: Number },
   costosDeEnvio: { type: Array },
   iva: { type: Number },

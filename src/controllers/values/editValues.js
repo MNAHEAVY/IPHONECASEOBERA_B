@@ -2,39 +2,24 @@ const Values = require("../../models/values");
 
 const updateValues = async (req, res) => {
   const { id } = req.params;
-  const {
-    dolarBlue,
-    costoGeneral,
-    flete,
-    profit,
-    obercoins,
-    costosDeEnvio,
-    costosGeneralIphone,
-    profitIphone,
-    comision,
-    tasa,
-    mp,
-    rentas,
-  } = req.body;
+  const { dolar, margen, flete, fleteLocal, obercoins, costosDeEnvio, iva, mp, rentas } =
+    req.body;
 
   try {
     const updatedValues = await Values.findByIdAndUpdate(
       id,
       {
-        dolarBlue,
-        costoGeneral,
+        dolar,
+        margen,
         flete,
-        profit,
+        fleteLocal,
         obercoins,
         costosDeEnvio,
-        costosGeneralIphone,
-        profitIphone,
-        comision,
-        tasa,
+        iva,
         mp,
         rentas,
       },
-      { new: true }
+      { new: true },
     );
     if (!updatedValues) {
       return res.status(404).json({ message: "Values not found" });
